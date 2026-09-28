@@ -98,3 +98,36 @@ An indexation share of zero is nominal and needs no CPI observations. Positive s
 credit/term spreads, and bank margin, while the nominal coupon additionally includes expected
 inflation and its risk premium. These are mechanism-oriented assumptions, not empirical Icelandic
 calibration claims.
+
+## Household-bank micro simulation
+
+Phase 04 adds a deterministic population of 1,000 heterogeneous households and two banks by
+default. Initialization assigns housing tenure, mortgage LTV, liquidity, income quintile, and bank
+from the named initialization stream. Every monthly deposit, mortgage, CPI revaluation, payment,
+capitalized arrear, consumption flow, and default write-down is recorded in the ledger. Household,
+required distributional-cohort, bank, and aggregate records retain whole-ISK stocks and flows.
+
+Until firms and endogenous prices arrive in later phases, income and CPI are explicit external
+paths. Income and consumption cross a declared external settlement boundary; CPI mortgage
+revaluation never changes deposits. Arrears apply payments to interest first, capitalize unpaid
+interest, and default after the configured persistent-arrears threshold. The initial default rule
+uses zero collateral recovery, so the complete remaining loan is removed from both parties and the
+loss reduces bank equity. This is a stylized mechanism assumption, not an empirical calibration.
+
+```python
+from ecodeling.config.schema import ModelConfig
+from ecodeling.identifiers import ScenarioId
+from ecodeling.micro import constant_external_paths, run_nominal_indexed_comparison
+
+config = ModelConfig(scenario_id=ScenarioId("shared-cpi-comparison"))
+paths = constant_external_paths(config, annual_inflation_bps=250)
+pair = run_nominal_indexed_comparison(config, paths)
+
+print(pair.nominal.aggregate_months[-1].total_mortgage_principal)
+print(pair.indexed.aggregate_months[-1].total_mortgage_principal)
+```
+
+The comparison regenerates the same opening population from the common seed and feeds both runs
+the same income and CPI observations. Only the documented nominal coupon versus indexed-principal
+contract structure differs. Output metadata includes scenario, seed, canonical configuration hash,
+run identity, regime, and exact timeline.

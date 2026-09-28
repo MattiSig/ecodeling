@@ -116,16 +116,16 @@ Verification gate: standard quality suite; all golden fixtures match exactly and
 
 Acceptance: isolated mortgages reproduce hand calculations and every principal change is traceable to a typed ledger event.
 
-## [ ] Phase 04 — Household-and-bank micro simulation
+## [x] Phase 04 — Household-and-bank micro simulation
 
 References: `specs/07_households.md`, `specs/09_banks_and_credit.md`, `specs/14_metrics_and_outputs.md`
 
-- [ ] Implement household and bank registries with heterogeneous but reproducible initial states.
-- [ ] Generate roughly 1,000 households and two banks from configuration.
-- [ ] Drive incomes and CPI from external paths while settling deposits, mortgages, arrears, and defaults.
-- [ ] Record household, cohort, bank, and aggregate monthly outputs.
-- [ ] Implement a scenario comparing nominal and indexed mortgages against an identical CPI path.
-- [ ] Add integration tests for long-run accounting, deterministic replay, distributional groups, and expected nominal/indexed divergence.
+- [x] Implement household and bank registries with heterogeneous but reproducible initial states.
+- [x] Generate roughly 1,000 households and two banks from configuration.
+- [x] Drive incomes and CPI from external paths while settling deposits, mortgages, arrears, and defaults.
+- [x] Record household, cohort, bank, and aggregate monthly outputs.
+- [x] Implement a scenario comparing nominal and indexed mortgages against an identical CPI path.
+- [x] Add integration tests for long-run accounting, deterministic replay, distributional groups, and expected nominal/indexed divergence.
 
 Verification gate: standard quality suite plus a 600-month seeded integration run with no accounting or numerical failures.
 
@@ -356,3 +356,8 @@ Notes: Added an append-only ledger whose typed transaction and revaluation entri
 Baseline: 0b7944cc0289d5014af2d7c2dba71eb9be2026b6
 Verification: `uv sync --all-groups`; `uv run pytest` (44 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/unit/test_mortgage.py tests/integration/test_mortgage_golden.py tests/property/test_mortgage_properties.py tests/unit/test_accounting.py` (22 passed); `git diff --check` (all passed)
 Notes: Added a reference-index-aware contract registry and fixed-coupon annuity mortgage lifecycle with integer-basis-point terms, lagged CPI revaluation, whole-ISK half-away-from-zero rounding, symmetric deflation, exact final payoff, and explicit nominal/indexed pricing decomposition. Origination, revaluation, and settlement mirror mortgage and deposit claims through typed events; ordered event batches commit atomically before contract state advances. Static 12-month nominal, half-indexed, and fully indexed fixtures plus generated lifecycle tests verify continuity, decomposition, payoff bounds, timing, and accounting.
+
+2026-09-29 — Phase 04 — COMPLETE
+Baseline: 3d6efe8cf13101dc9f1b7c6c362b22703c677263
+Verification: `uv sync --all-groups`; `uv run pytest` (51 passed, including the 1,000-household/two-bank 600-month seeded run); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `git diff --check` (all passed)
+Notes: Added deterministic heterogeneous household/bank registries, externally supplied exact CPI and income paths, ledger-backed income/consumption settlement, mortgage payment and CPI revaluation, persistent arrears with interest capitalization, zero-recovery default write-downs, and household/cohort/bank/aggregate outputs. External settlement claims are mirrored by foreign-sector liabilities; paired nominal/indexed runs regenerate identical populations and share paths while applying the documented coupon/indexation distinction. A derived ledger balance cache and cached annuity factors make the long-run audit tractable without changing journal authority or monetary rounding.

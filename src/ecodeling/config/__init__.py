@@ -1,5 +1,5 @@
 """Validated external configuration for Ecodeling runs."""
 
-from ecodeling.config.schema import ModelConfig
+from ecodeling.config.schema import MicroSimulationConfig, ModelConfig
 
-__all__ = ["ModelConfig"]
+__all__ = ["MicroSimulationConfig", "ModelConfig"]

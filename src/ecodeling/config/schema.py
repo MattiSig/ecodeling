@@ -37,6 +37,28 @@ class IndexationConfig(FrozenConfigModel):
     lag_months: Annotated[int, Field(ge=0, le=120)] = 2
 
 
+class MicroSimulationConfig(FrozenConfigModel):
+    """Population and stylized household-bank behavior for the micro model."""
+
+    households: Annotated[int, Field(ge=10, le=10_000)] = 1_000
+    banks: Annotated[int, Field(ge=1, le=20)] = 2
+    mortgage_share: Probability = 0.70
+    homeowner_share: Probability = 0.15
+    mortgage_term_months: Annotated[int, Field(ge=12, le=1_200)] = 600
+    default_after_arrears_months: Annotated[int, Field(ge=2, le=24)] = 3
+    real_rate_bps: Annotated[int, Field(ge=0, le=10_000)] = 300
+    expected_inflation_bps: Annotated[int, Field(ge=0, le=10_000)] = 250
+    inflation_risk_premium_bps: Annotated[int, Field(ge=0, le=10_000)] = 50
+    credit_spread_bps: Annotated[int, Field(ge=0, le=10_000)] = 50
+
+    @model_validator(mode="after")
+    def validate_tenure_shares(self) -> Self:
+        """Leave a non-negative renter share after owner groups are assigned."""
+        if self.mortgage_share + self.homeowner_share > 1.0:
+            raise ValueError("mortgage and debt-free homeowner shares cannot exceed one")
+        return self
+
+
 class MonetaryPolicyConfig(FrozenConfigModel):
     """Parameters for the later inflation-response policy rule."""
 
@@ -94,6 +116,7 @@ class ModelConfig(FrozenConfigModel):
     scenario_id: Annotated[ScenarioId, Field(min_length=1)]
     simulation: SimulationConfig = Field(default_factory=SimulationConfig)
     indexation: IndexationConfig = Field(default_factory=IndexationConfig)
+    micro: MicroSimulationConfig = Field(default_factory=MicroSimulationConfig)
     monetary_policy: MonetaryPolicyConfig = Field(default_factory=MonetaryPolicyConfig)
     shock: ShockConfig = Field(default_factory=ShockConfig)
 

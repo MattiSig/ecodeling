@@ -221,6 +221,7 @@ class Ledger:
         self._accounts: dict[AccountId, Account] = {}
         self._entries: list[JournalEntry] = []
         self._entry_ids: set[LedgerEntryId] = set()
+        self._balance_cache: dict[AccountId, ISK] = {}
 
     @property
     def accounts(self) -> tuple[Account, ...]:
@@ -247,6 +248,7 @@ class Ledger:
         if account.id in self._accounts:
             raise AccountingError(f"account ID already exists: {account.id}")
         self._accounts[account.id] = account
+        self._balance_cache[account.id] = 0
 
     def post(self, entry: JournalEntry) -> None:
         """Validate a complete entry, then append it atomically."""
@@ -265,7 +267,7 @@ class Ledger:
         if existing:
             raise AccountingError(f"entry ID already exists: {existing[0]}")
 
-        prospective = {account_id: self.balance(account_id) for account_id in self._accounts}
+        prospective = self._balances()
         for entry in entries:
             accounts = self._resolve_accounts(entry)
             self._validate_agent_effects(entry, accounts)
@@ -276,34 +278,44 @@ class Ledger:
 
         self._entries.extend(entries)
         self._entry_ids.update(entry_ids)
+        self._balance_cache = prospective
 
     def balance(self, account_id: AccountId) -> ISK:
         """Reconstruct one account balance from the journal."""
         if account_id not in self._accounts:
             raise AccountingError(f"unknown account: {account_id}")
-        return sum(
-            posting.amount
-            for entry in self._entries
-            for posting in entry.postings
-            if posting.account_id == account_id
-        )
+        return self._balance_cache[account_id]
+
+    def _balances(self) -> dict[AccountId, ISK]:
+        """Reconstruct every balance in one journal pass for aggregate operations."""
+        return self._balance_cache.copy()
 
     def balance_sheet(self, owner_id: AgentId) -> BalanceSheet:
         """Build one agent's balance sheet from its account positions."""
         return self._report(
-            tuple(account for account in self._accounts.values() if account.owner_id == owner_id)
+            tuple(account for account in self._accounts.values() if account.owner_id == owner_id),
+            self._balances(),
         )
 
     def sector_balance_sheet(self, sector: Sector) -> SectorBalanceSheet:
         """Build an aggregate balance sheet for an institutional sector."""
         accounts = tuple(account for account in self._accounts.values() if account.sector is sector)
-        return SectorBalanceSheet(sector, self._report(accounts))
+        return SectorBalanceSheet(sector, self._report(accounts, self._balances()))
 
     def system_balance_sheet(self) -> SystemBalanceSheet:
         """Build system and sector aggregates from all account positions."""
-        report = self._report(tuple(self._accounts.values()))
+        balances = self._balances()
+        report = self._report(tuple(self._accounts.values()), balances)
         sectors = tuple(
-            self.sector_balance_sheet(sector)
+            SectorBalanceSheet(
+                sector,
+                self._report(
+                    tuple(
+                        account for account in self._accounts.values() if account.sector is sector
+                    ),
+                    balances,
+                ),
+            )
             for sector in Sector
             if any(account.sector is sector for account in self._accounts.values())
         )
@@ -317,13 +329,23 @@ class Ledger:
 
     def assert_accounting_invariants(self) -> None:
         """Assert agent equations, mirrored claims, and aggregate identities."""
-        owners = {account.owner_id for account in self._accounts.values()}
-        for owner_id in owners:
-            gap = self.balance_sheet(owner_id).accounting_gap
+        balances = self._balances()
+        accounts_by_owner: dict[AgentId, list[Account]] = defaultdict(list)
+        for account in self._accounts.values():
+            accounts_by_owner[account.owner_id].append(account)
+        for owner_id, owner_accounts in accounts_by_owner.items():
+            gap = self._report(tuple(owner_accounts), balances).accounting_gap
             if gap != 0:
                 raise AccountingError(f"agent balance sheet does not balance: {owner_id} gap={gap}")
-        self._assert_current_claims_mirrored()
-        report = self.system_balance_sheet()
+        self._assert_current_claims_mirrored(balances)
+        aggregate = self._report(tuple(self._accounts.values()), balances)
+        report = SystemBalanceSheet(
+            sectors=(),
+            financial_assets=aggregate.financial_assets,
+            real_assets=aggregate.real_assets,
+            financial_liabilities=aggregate.liabilities,
+            equity=aggregate.equity,
+        )
         if report.financial_claim_gap != 0:
             raise AccountingError(
                 f"aggregate financial claims do not cancel: gap={report.financial_claim_gap}"
@@ -395,11 +417,11 @@ class Ledger:
                     f"posting would make account negative: {account.id} closing={closing}"
                 )
 
-    def _assert_current_claims_mirrored(self) -> None:
+    def _assert_current_claims_mirrored(self, current: dict[AccountId, ISK]) -> None:
         claims: dict[ContractId, dict[AccountKind, int]] = defaultdict(lambda: defaultdict(int))
         for account in self._accounts.values():
             if account.claim_id is not None:
-                claims[account.claim_id][account.kind] += self.balance(account.id)
+                claims[account.claim_id][account.kind] += current[account.id]
         claim_kinds = self._claim_kinds()
         for claim_id, balances in claims.items():
             if claim_kinds[claim_id] != {
@@ -423,8 +445,12 @@ class Ledger:
                 claim_kinds[account.claim_id].add(account.kind)
         return claim_kinds
 
-    def _report(self, accounts: tuple[Account, ...]) -> BalanceSheet:
-        positions = tuple(Position(account, self.balance(account.id)) for account in accounts)
+    def _report(
+        self,
+        accounts: tuple[Account, ...],
+        balances: dict[AccountId, ISK],
+    ) -> BalanceSheet:
+        positions = tuple(Position(account, balances[account.id]) for account in accounts)
         return BalanceSheet(
             positions=positions,
             financial_assets=sum(

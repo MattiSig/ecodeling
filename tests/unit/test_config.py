@@ -31,6 +31,7 @@ def test_default_configuration_is_frozen_and_complete() -> None:
         ({"simulation": {"seed": -1}}, "simulation.seed"),
         ({"indexation": {"mortgage_alpha": 1.01}}, "indexation.mortgage_alpha"),
         ({"indexation": {"lag_months": -1}}, "indexation.lag_months"),
+        ({"micro": {"mortgage_share": 0.9, "homeowner_share": 0.2}}, "micro"),
         ({"monetary_policy": {"smoothing": 1.01}}, "monetary_policy.smoothing"),
         ({"shock": {"kind": "fx_depreciation", "magnitude": 0.1}}, "shock.month"),
         ({"unknown": True}, "unknown"),
@@ -84,5 +85,5 @@ def test_default_configuration_has_stable_canonical_identity() -> None:
     config = ModelConfig(scenario_id=ScenarioId("baseline"))
 
     assert config.configuration_hash() == (
-        "2809eceeaf784277816e3be5892fad1011d97ee8dd702f28b340767630cc1083"
+        "342e6332031f1815f64c3174fc11582d4c4d3e069330eb920426efb6756d520c"
     )

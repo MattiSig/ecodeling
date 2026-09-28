@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from decimal import ROUND_HALF_UP, Decimal, localcontext
 from enum import StrEnum
+from functools import cache
 
 from ecodeling.accounting import (
     ISK,
@@ -291,6 +292,16 @@ def _interest(principal: ISK, annual_rate_bps: int) -> ISK:
     )
 
 
+@cache
+def _annuity_factor(annual_rate_bps: int, payments: int) -> Decimal:
+    """Return the deterministic payment factor shared by like-term contracts."""
+    with localcontext() as context:
+        context.prec = 50
+        monthly_rate = Decimal(annual_rate_bps) / Decimal(_MONTHLY_RATE_DENOMINATOR)
+        factor = (Decimal(1) + monthly_rate) ** (-payments)
+        return +(monthly_rate / (Decimal(1) - factor))
+
+
 def _annuity_payment(principal: ISK, annual_rate_bps: int, payments: int) -> ISK:
     if principal == 0:
         return 0
@@ -302,9 +313,9 @@ def _annuity_payment(principal: ISK, annual_rate_bps: int, payments: int) -> ISK
     else:
         with localcontext() as context:
             context.prec = 50
-            monthly_rate = Decimal(annual_rate_bps) / Decimal(_MONTHLY_RATE_DENOMINATOR)
-            factor = (Decimal(1) + monthly_rate) ** (-payments)
-            rounded = _round_decimal_isk(Decimal(principal) * monthly_rate / (Decimal(1) - factor))
+            rounded = _round_decimal_isk(
+                Decimal(principal) * _annuity_factor(annual_rate_bps, payments)
+            )
     total_due = principal + interest
     return min(total_due, max(interest + 1, rounded))
 
