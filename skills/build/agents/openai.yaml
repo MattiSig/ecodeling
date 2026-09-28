@@ -1,0 +1,6 @@
+interface:
+  display_name: "Ecodeling Build"
+  short_description: "Advance Ecodeling by one verified build phase"
+  default_prompt: "Use $build to implement and verify the next unchecked phase in build.md."
+policy:
+  allow_implicit_invocation: false

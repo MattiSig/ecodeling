@@ -1,0 +1,57 @@
+[build-system]
+requires = ["uv_build>=0.10.0,<0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "ecodeling"
+version = "0.0.0"
+description = "An educational agent-based model of CPI indexation"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Ecodeling contributors" }]
+dependencies = [
+    "typer>=0.19.0,<1.0.0",
+]
+
+[project.scripts]
+ecodeling = "ecodeling.cli:app"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.140.0,<7.0.0",
+    "mypy>=1.18.0,<2.0.0",
+    "pytest>=8.4.0,<10.0.0",
+    "ruff>=0.13.0,<1.0.0",
+]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+    "-ra",
+]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["ANN", "ARG", "B", "D", "E4", "E7", "E9", "F", "I", "RUF", "UP"]
+ignore = ["D203", "D213"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+pretty = true
+show_error_codes = true
+warn_unused_configs = true
+
+[tool.uv]
+required-version = ">=0.12.19,<0.13.0"

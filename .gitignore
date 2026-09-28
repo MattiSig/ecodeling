@@ -1,0 +1,45 @@
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments and packaging outputs
+.venv/
+venv/
+/dist/
+/build/
+*.egg-info/
+
+# Node and frontend outputs
+node_modules/
+coverage/
+playwright-report/
+test-results/
+
+# Simulation and analytical outputs
+outputs/
+runs/
+artifacts/
+*.parquet
+*.arrow
+
+# Local databases and environment files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+*.swp
