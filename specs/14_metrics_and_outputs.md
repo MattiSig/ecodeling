@@ -149,3 +149,34 @@ start_date_or_simulation_month
 shock_definition
 indexation_topology
 ```
+
+## Interactive replay outputs
+
+Each publishable run should be convertible into a versioned, browser-oriented replay bundle containing:
+
+- a manifest with schema version, run ID, model version, commit, scenario, seed, units, and available months;
+- monthly sector snapshots for households, firms, banks, government, central bank, and foreign sector;
+- monthly sector-to-sector flows for wages, consumption, taxes, transfers, imports, credit, interest, and principal payments;
+- typed events for shocks, indexation revaluations, policy-rate changes, arrears, defaults, and other narrative markers;
+- representative-agent tracks with stable IDs and declared cohort labels;
+- the aggregate and distributional series needed by synchronized charts;
+- pairing metadata connecting nominal and indexed runs that share initialization and shock streams.
+
+Representative agents should be selected deterministically from policy-relevant cohorts such as low-income/high-LTV borrowers, other mortgagors, renters, and debt-free households. They illustrate actual simulated paths; they are not synthetic personas assembled after the run.
+
+## Replay integrity
+
+The replay exporter must assert that:
+
+- displayed sector stocks match the authoritative monthly outputs;
+- aggregated visual flows match the underlying ledger within declared rounding tolerance;
+- paired runs use the same timeline and intended common random streams;
+- every visual event references its source month and event type;
+- units, nominal/real status, and price base are explicit;
+- missing data is represented as unavailable rather than silently replaced with zero.
+
+Animations may simplify scale, timing within a month, and the number of visible agents. They must not invent transactions, causal links, or outcomes. A visual replay is an explanatory view of a run, not an additional empirical result.
+
+## Storage formats
+
+Use columnar analytical outputs such as Parquet for research and batch analysis. Produce a compact, schema-versioned JSON or equivalent web payload for published replays. Large household panels should remain outside the browser bundle; include only declared representative tracks and aggregates required by the experience.

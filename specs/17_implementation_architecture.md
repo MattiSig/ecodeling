@@ -38,6 +38,7 @@ src/
     metrics.py
     recorder.py
     plots.py
+    replay.py
   config/
     schema.py
 
@@ -178,3 +179,37 @@ Provide two logging modes:
 - audit/debug: individual contract/ledger events for a small model.
 
 The audit mode is invaluable for diagnosing stock-flow inconsistencies.
+
+## Presentation boundary
+
+The Python model is the sole authority for economic state transitions. The web experience may filter, aggregate, annotate, and animate recorded results, but it must not independently calculate prices, balances, payments, defaults, or policy responses.
+
+The boundary is:
+
+```text
+scenario configuration
+        -> Python simulation
+        -> versioned run outputs and replay bundle
+        -> browser visualization
+```
+
+This avoids maintaining separate Python and TypeScript versions of the economic model.
+
+## Replay exporter
+
+`reporting/replay.py` should transform a completed run into the web replay contract defined in `22_interactive_web_experience.md`. The exporter should:
+
+- preserve the run ID, model version, commit, seed, scenario, units, and timeline;
+- aggregate transaction-ledger entries into sector-to-sector flows without changing their totals;
+- expose notable shocks, revaluations, defaults, and policy changes as typed events;
+- select representative agents deterministically from declared cohorts;
+- align paired nominal and indexed runs on the same monthly clock;
+- validate the replay bundle against aggregates before publishing it.
+
+The replay export is a derived presentation artifact. The analytical tables and ledger remain the authoritative research outputs.
+
+## Web delivery
+
+The default article should load a precomputed canonical replay so that playback begins without waiting for a simulation. Reader-created experiments should be submitted to a server-side Python runner with an allowlisted parameter schema and bounded run size. Results should be cached by model version plus configuration hash.
+
+The browser should receive immutable completed-run data and replay it locally. Scrubbing and playback must not rerun the model. Progress reporting for a custom run may use polling or server-sent events; live tick-by-tick streaming is not required for version 0.1.

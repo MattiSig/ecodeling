@@ -35,6 +35,7 @@ The first implementation should be deliberately small. The goal is **not** to re
 | [19_research_sources.md](19_research_sources.md) | Research notes and sources | Pointers to Icelandic institutions and AB-SFC literature used to ground the spec. |
 | [20_blog_post_plan.md](20_blog_post_plan.md) | Future write-up | A structure for turning the model and results into an explanatory blog post. |
 | [21_glossary.md](21_glossary.md) | Glossary | Defines economic and modeling terms used throughout the specification. |
+| [22_interactive_web_experience.md](22_interactive_web_experience.md) | Interactive explainer | Defines the browser-based animated economy, replay contract, and reader laboratory. |
 
 ## Core design principles
 
@@ -45,6 +46,7 @@ The first implementation should be deliberately small. The goal is **not** to re
 5. **Use identical shocks when comparing regimes.** Structural changes should be isolated using common random numbers/seeds.
 6. **Measure distribution as well as aggregates.** Indexation can redistribute risk and wealth even if GDP barely changes.
 7. **Treat conclusions as model-dependent.** The simulation is a laboratory for mechanisms, not an oracle about policy.
+8. **Animate recorded outcomes, not invented stories.** Every visual state and flow must be traceable to simulation output.
 
 ## Version 0.1 in one paragraph
 
@@ -63,6 +65,7 @@ The first milestone is complete when:
 - the same random seed produces the same run;
 - regime comparisons use the same shock sequence;
 - output tables contain the required core metrics;
+- a versioned replay export can drive the browser visualization without executing economic logic in the frontend;
 - unit tests verify accounting identities and contract update rules.
 
 ## Naming convention
