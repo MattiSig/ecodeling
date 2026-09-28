@@ -71,16 +71,16 @@ uv run ecodeling --version
 
 Acceptance: a clean checkout can install, validate, test, and invoke the empty application through documented commands.
 
-## [ ] Phase 01 — Core identifiers, configuration, clock, and randomness
+## [x] Phase 01 — Core identifiers, configuration, clock, and randomness
 
 References: `specs/02_model_scope.md`, `specs/04_agents.md`, `specs/12_simulation_loop.md`, `specs/17_implementation_architecture.md`
 
-- [ ] Add typed IDs for agents, accounts, contracts, runs, and scenarios.
-- [ ] Implement an immutable monthly simulation clock with explicit start, stop, and current month.
-- [ ] Define the validated configuration schema, including simulation length, seed, indexation, policy, and shock sections.
-- [ ] Implement named random streams derived deterministically from one master seed.
-- [ ] Add canonical configuration serialization and hashing for reproducibility and future caching.
-- [ ] Add unit and property tests for validation, clock boundaries, stream independence, and repeatability.
+- [x] Add typed IDs for agents, accounts, contracts, runs, and scenarios.
+- [x] Implement an immutable monthly simulation clock with explicit start, stop, and current month.
+- [x] Define the validated configuration schema, including simulation length, seed, indexation, policy, and shock sections.
+- [x] Implement named random streams derived deterministically from one master seed.
+- [x] Add canonical configuration serialization and hashing for reproducibility and future caching.
+- [x] Add unit and property tests for validation, clock boundaries, stream independence, and repeatability.
 
 Verification gate: standard quality suite plus repeated-run tests proving identical configurations and seeds yield identical primitive random sequences and hashes.
 
@@ -341,3 +341,8 @@ Notes: <decisions, deviations, or blocker>
 Baseline: n/a (the workspace contained an empty `.git` directory and no valid repository)
 Verification: `uv sync --all-groups`; `uv run pytest` (3 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version` (all passed)
 Notes: Initialized the repository on `main`; pinned Python 3.12 and uv 0.12.19 for CI; established `src/ecodeling`, strict quality tooling, the Typer foundation CLI, and root-only build-output ignores so the repository-owned build skill remains tracked.
+
+2026-09-28 — Phase 01 — COMPLETE
+Baseline: 77df04ae55af1b8a0c592c2764efc0f2e4ad7dd4
+Verification: `uv sync --all-groups`; `uv run pytest` (20 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/unit/test_config.py tests/unit/test_randomness.py` (13 passed); `git diff --check` (all passed)
+Notes: Added static domain ID types, an immutable inclusive monthly clock, frozen Pydantic configuration with bounded simulation/indexation/policy/shock sections, SHA-256 canonical JSON identity, and order-independent named NumPy PCG64 streams. Golden configuration-hash and primitive-random-sequence fixtures make reproducibility changes explicit; NumPy and Pydantic were added as already-locked architecture dependencies.

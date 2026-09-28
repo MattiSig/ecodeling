@@ -11,6 +11,8 @@ requires-python = ">=3.12"
 license = "MIT"
 authors = [{ name = "Ecodeling contributors" }]
 dependencies = [
+    "numpy>=2.3.0,<3.0.0",
+    "pydantic>=2.11.0,<3.0.0",
     "typer>=0.19.0,<1.0.0",
 ]
 

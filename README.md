@@ -34,4 +34,29 @@ uv run ecodeling --version
 uv run ecodeling validate
 ```
 
-Economic configuration and simulation commands will be added in later build phases.
+Simulation commands will be added in later build phases.
+
+## Core reproducibility primitives
+
+Phase 01 provides typed IDs, an immutable inclusive monthly clock, frozen Pydantic configuration,
+canonical configuration hashing, and independent named NumPy random streams. A minimal run identity
+can be constructed as follows:
+
+```python
+from ecodeling.config.schema import ModelConfig
+from ecodeling.identifiers import ScenarioId
+from ecodeling.model.clock import SimulationClock
+from ecodeling.randomness import NamedRandomStreams, RandomStream
+
+config = ModelConfig(scenario_id=ScenarioId("baseline"))
+clock = SimulationClock.create(config.simulation.start_month, config.simulation.months)
+shocks = NamedRandomStreams(config.simulation.seed).generator(RandomStream.SHOCKS)
+
+print(clock.start, clock.stop)
+print(config.configuration_hash())
+print(shocks.bit_generator.random_raw())
+```
+
+Clock bounds are inclusive. Calling `advance()` returns a new clock, and advancing the final month
+raises `ClockExhaustedError`. Each call to `generator()` returns a fresh generator at the stable
+start of that named stream, so requesting other streams cannot perturb its sequence.
