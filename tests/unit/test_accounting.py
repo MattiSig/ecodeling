@@ -143,6 +143,37 @@ def test_duplicate_entry_identifier_fails_atomically(funded_ledger: Ledger) -> N
     assert funded_ledger.entries == (opening,)
 
 
+def test_entry_batch_fails_atomically_when_later_entry_is_invalid(
+    funded_ledger: Ledger,
+) -> None:
+    before = funded_ledger.entries
+    valid = TransactionEntry(
+        LedgerEntryId("valid-first"),
+        YearMonth(2025, 1),
+        "Balanced first batch entry",
+        (
+            Posting(AccountId("household-1-deposit"), 1),
+            Posting(AccountId("household-1-equity"), 1),
+            Posting(AccountId("bank-1-household-1-deposit"), 1),
+            Posting(AccountId("bank-1-operating-asset"), 1),
+        ),
+    )
+    invalid = TransactionEntry(
+        LedgerEntryId("invalid-second"),
+        YearMonth(2025, 1),
+        "Unbalanced second batch entry",
+        (
+            Posting(AccountId("household-1-deposit"), 1),
+            Posting(AccountId("household-1-equity"), 2),
+        ),
+    )
+
+    with pytest.raises(AccountingError):
+        funded_ledger.post_all((valid, invalid))
+
+    assert funded_ledger.entries == before
+
+
 def test_accounts_require_claim_ids_only_for_financial_claims() -> None:
     with pytest.raises(ValueError, match="claim ID"):
         Account(

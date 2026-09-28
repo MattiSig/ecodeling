@@ -75,3 +75,26 @@ positions unless an account explicitly permits otherwise, and use a unique entry
 leave the ledger unchanged. `balance_sheet()`, `sector_balance_sheet()`,
 `system_balance_sheet()`, and `assert_accounting_invariants()` expose the resulting agent, sector,
 and closed-system identities without mutable balance fields.
+
+## Mortgage contracts
+
+`ContractRegistry` runs each mortgage through an explicit monthly opening state → lagged CPI
+revaluation → cash-flow calculation → settlement → closing state lifecycle. Origination,
+principal revaluation, and payment settlement are typed ledger entries. Mortgage assets and
+liabilities, as well as the deposit movements used for cash settlement, are always posted to both
+counterparties. Multi-entry periods are validated and appended atomically.
+
+Contract rates and indexation shares use integer basis points; reference-index levels are positive
+integers. The Phase 03 coupon is fixed for the contract, and interest uses that annual coupon
+divided by 12; policy-rate reset rules arrive in a later phase. Annuity payments are recalculated
+from the post-indexation principal and remaining term, and all monetary results round to whole ISK
+with ties away from zero. The first payment is one month after origination, and the last payment
+clears the remaining principal exactly. Early payoff is permitted when rounded amortization or
+deflation reduces the balance sooner.
+
+An indexation share of zero is nominal and needs no CPI observations. Positive shares use
+`P[t-lag] / P[t-lag-1] - 1`; inflation and deflation are symmetric, with no implicit zero floor.
+`MortgagePricing` documents the comparison rule: the indexed coupon includes the real rate,
+credit/term spreads, and bank margin, while the nominal coupon additionally includes expected
+inflation and its risk premium. These are mechanism-oriented assumptions, not empirical Icelandic
+calibration claims.

@@ -250,14 +250,32 @@ class Ledger:
 
     def post(self, entry: JournalEntry) -> None:
         """Validate a complete entry, then append it atomically."""
-        if entry.id in self._entry_ids:
-            raise AccountingError(f"entry ID already exists: {entry.id}")
-        accounts = self._resolve_accounts(entry)
-        self._validate_agent_effects(entry, accounts)
-        self._validate_claim_effects(entry, accounts)
-        self._validate_prospective_balances(entry, accounts)
-        self._entries.append(entry)
-        self._entry_ids.add(entry.id)
+        self.post_all((entry,))
+
+    def post_all(self, entries: tuple[JournalEntry, ...]) -> None:
+        """Validate and append a group of ordered entries as one atomic operation."""
+        if not isinstance(entries, tuple):
+            raise TypeError("entries must be an immutable tuple")
+        if not entries:
+            raise ValueError("at least one entry is required")
+        entry_ids = tuple(entry.id for entry in entries)
+        if len(entry_ids) != len(set(entry_ids)):
+            raise AccountingError("batch contains duplicate entry IDs")
+        existing = [entry_id for entry_id in entry_ids if entry_id in self._entry_ids]
+        if existing:
+            raise AccountingError(f"entry ID already exists: {existing[0]}")
+
+        prospective = {account_id: self.balance(account_id) for account_id in self._accounts}
+        for entry in entries:
+            accounts = self._resolve_accounts(entry)
+            self._validate_agent_effects(entry, accounts)
+            self._validate_claim_effects(entry, accounts)
+            self._validate_prospective_balances(entry, accounts, prospective)
+            for posting in entry.postings:
+                prospective[posting.account_id] += posting.amount
+
+        self._entries.extend(entries)
+        self._entry_ids.update(entry_ids)
 
     def balance(self, account_id: AccountId) -> ISK:
         """Reconstruct one account balance from the journal."""
@@ -368,9 +386,10 @@ class Ledger:
         self,
         entry: JournalEntry,
         accounts: tuple[Account, ...],
+        balances: dict[AccountId, ISK],
     ) -> None:
         for posting, account in zip(entry.postings, accounts, strict=True):
-            closing = self.balance(account.id) + posting.amount
+            closing = balances[account.id] + posting.amount
             if closing < 0 and not account.allow_negative:
                 raise AccountingError(
                     f"posting would make account negative: {account.id} closing={closing}"

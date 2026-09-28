@@ -101,16 +101,16 @@ Verification gate: standard quality suite plus accounting invariant tests over g
 
 Acceptance: creating, transferring, or revaluing 1 ISK never breaks the declared balance-sheet identities.
 
-## [ ] Phase 03 — Contract registry and mortgage engine
+## [x] Phase 03 — Contract registry and mortgage engine
 
 References: `specs/03_indexation_contract_spec.md`, `specs/05_balance_sheets_and_sfc.md`, `specs/09_banks_and_credit.md`
 
-- [ ] Implement the contract registry and the opening state → revaluation → cash-flow calculation → settlement → closing state lifecycle.
-- [ ] Implement nominal and partially/fully indexed amortizing mortgages with lag, rate, maturity, and payment rules.
-- [ ] Mirror borrower liabilities and bank assets through ledger events.
-- [ ] Encode rounding, final-payment, zero/negative-inflation, and payoff behavior explicitly.
-- [ ] Add hand-calculated 12-month golden fixtures for nominal, partially indexed, and fully indexed loans.
-- [ ] Add property tests for principal continuity, mirrored revaluation, payment decomposition, and payoff bounds.
+- [x] Implement the contract registry and the opening state → revaluation → cash-flow calculation → settlement → closing state lifecycle.
+- [x] Implement nominal and partially/fully indexed amortizing mortgages with lag, rate, maturity, and payment rules.
+- [x] Mirror borrower liabilities and bank assets through ledger events.
+- [x] Encode rounding, final-payment, zero/negative-inflation, and payoff behavior explicitly.
+- [x] Add hand-calculated 12-month golden fixtures for nominal, partially indexed, and fully indexed loans.
+- [x] Add property tests for principal continuity, mirrored revaluation, payment decomposition, and payoff bounds.
 
 Verification gate: standard quality suite; all golden fixtures match exactly and all contract/accounting invariants pass.
 
@@ -351,3 +351,8 @@ Notes: Added static domain ID types, an immutable inclusive monthly clock, froze
 Baseline: 32ef3acdd018d2d3d2bb13718d3f2635c52681ca
 Verification: `uv sync --all-groups`; `uv run pytest` (31 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/unit/test_accounting.py tests/property/test_accounting_properties.py` (11 passed); `git diff --check` (all passed)
 Notes: Added an append-only ledger whose typed transaction and revaluation entries use exact whole-ISK integers and reconstruct all positions from journal history. Posting is atomic and enforces per-agent balance, equal changes to both sides of every financial claim, unique entry IDs, and explicit negative-balance permission; reports expose agent, sector, and system identities. Household/bank deposit, mortgage, revaluation, and transfer fixtures cover explicit equity effects, including 1 ISK creation/revaluation and a generated 1 ISK transfer example.
+
+2026-09-28 — Phase 03 — COMPLETE
+Baseline: 0b7944cc0289d5014af2d7c2dba71eb9be2026b6
+Verification: `uv sync --all-groups`; `uv run pytest` (44 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/unit/test_mortgage.py tests/integration/test_mortgage_golden.py tests/property/test_mortgage_properties.py tests/unit/test_accounting.py` (22 passed); `git diff --check` (all passed)
+Notes: Added a reference-index-aware contract registry and fixed-coupon annuity mortgage lifecycle with integer-basis-point terms, lagged CPI revaluation, whole-ISK half-away-from-zero rounding, symmetric deflation, exact final payoff, and explicit nominal/indexed pricing decomposition. Origination, revaluation, and settlement mirror mortgage and deposit claims through typed events; ordered event batches commit atomically before contract state advances. Static 12-month nominal, half-indexed, and fully indexed fixtures plus generated lifecycle tests verify continuity, decomposition, payoff bounds, timing, and accounting.
