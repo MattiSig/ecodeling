@@ -8,6 +8,9 @@ AgentId = NewType("AgentId", str)
 AccountId = NewType("AccountId", str)
 """Identifier for a ledger account."""
 
+LedgerEntryId = NewType("LedgerEntryId", str)
+"""Identifier for an immutable transaction or revaluation journal entry."""
+
 ContractId = NewType("ContractId", str)
 """Identifier for an economic contract."""
 

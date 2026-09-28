@@ -86,16 +86,16 @@ Verification gate: standard quality suite plus repeated-run tests proving identi
 
 Acceptance: later phases can depend on stable identifiers, validated parameters, a monthly clock, and reproducible named randomness.
 
-## [ ] Phase 02 — Ledger and stock-flow accounting kernel
+## [x] Phase 02 — Ledger and stock-flow accounting kernel
 
 References: `specs/05_balance_sheets_and_sfc.md`, `specs/16_validation_and_testing.md`
 
-- [ ] Implement accounts, balance-sheet positions, transaction entries, and revaluation entries using integer ISK minor units or another explicitly documented exact representation.
-- [ ] Require every transaction and revaluation to identify balanced asset/liability or debit/credit effects.
-- [ ] Implement agent and system balance-sheet reports without hidden balance mutation.
-- [ ] Add accounting assertions for transaction balance, mirrored claims, and aggregate sector identities.
-- [ ] Add fixtures for households, banks, deposits, loans, and transfers.
-- [ ] Add property tests showing arbitrary valid transfers conserve the required totals and invalid entries fail atomically.
+- [x] Implement accounts, balance-sheet positions, transaction entries, and revaluation entries using integer ISK minor units or another explicitly documented exact representation.
+- [x] Require every transaction and revaluation to identify balanced asset/liability or debit/credit effects.
+- [x] Implement agent and system balance-sheet reports without hidden balance mutation.
+- [x] Add accounting assertions for transaction balance, mirrored claims, and aggregate sector identities.
+- [x] Add fixtures for households, banks, deposits, loans, and transfers.
+- [x] Add property tests showing arbitrary valid transfers conserve the required totals and invalid entries fail atomically.
 
 Verification gate: standard quality suite plus accounting invariant tests over generated transaction sequences.
 
@@ -346,3 +346,8 @@ Notes: Initialized the repository on `main`; pinned Python 3.12 and uv 0.12.19 f
 Baseline: 77df04ae55af1b8a0c592c2764efc0f2e4ad7dd4
 Verification: `uv sync --all-groups`; `uv run pytest` (20 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/unit/test_config.py tests/unit/test_randomness.py` (13 passed); `git diff --check` (all passed)
 Notes: Added static domain ID types, an immutable inclusive monthly clock, frozen Pydantic configuration with bounded simulation/indexation/policy/shock sections, SHA-256 canonical JSON identity, and order-independent named NumPy PCG64 streams. Golden configuration-hash and primitive-random-sequence fixtures make reproducibility changes explicit; NumPy and Pydantic were added as already-locked architecture dependencies.
+
+2026-09-28 — Phase 02 — COMPLETE
+Baseline: 32ef3acdd018d2d3d2bb13718d3f2635c52681ca
+Verification: `uv sync --all-groups`; `uv run pytest` (31 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/unit/test_accounting.py tests/property/test_accounting_properties.py` (11 passed); `git diff --check` (all passed)
+Notes: Added an append-only ledger whose typed transaction and revaluation entries use exact whole-ISK integers and reconstruct all positions from journal history. Posting is atomic and enforces per-agent balance, equal changes to both sides of every financial claim, unique entry IDs, and explicit negative-balance permission; reports expose agent, sector, and system identities. Household/bank deposit, mortgage, revaluation, and transfer fixtures cover explicit equity effects, including 1 ISK creation/revaluation and a generated 1 ISK transfer example.

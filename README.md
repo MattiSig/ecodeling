@@ -60,3 +60,18 @@ print(shocks.bit_generator.random_raw())
 Clock bounds are inclusive. Calling `advance()` returns a new clock, and advancing the final month
 raises `ClockExhaustedError`. Each call to `generator()` returns a fresh generator at the stable
 start of that named stream, so requesting other streams cannot perturb its sequence.
+
+## Accounting kernel
+
+All monetary positions and journal changes use exact integer Icelandic krónur (ISK). Iceland's
+currency has no circulating fractional unit, so floats and booleans are rejected rather than
+rounded. Positive posting amounts increase an account's natural asset, liability, or equity
+balance; negative amounts decrease it.
+
+The append-only `Ledger` reconstructs positions from typed `TransactionEntry` and
+`RevaluationEntry` records. Before an entry is appended, it must balance for every affected agent,
+change both sides of each financial claim equally, reference known accounts, preserve non-negative
+positions unless an account explicitly permits otherwise, and use a unique entry ID. Failed entries
+leave the ledger unchanged. `balance_sheet()`, `sector_balance_sheet()`,
+`system_balance_sheet()`, and `assert_accounting_invariants()` expose the resulting agent, sector,
+and closed-system identities without mutable balance fields.
