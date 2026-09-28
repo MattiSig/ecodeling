@@ -8,7 +8,7 @@ _Last checked: September 2026._
 
 ## Statistics Iceland — CPI and financial indexation
 
-**Consumer price index in May 2026**  
+**Consumer price index in May 2026**
 Statistics Iceland, 28 May 2026. The release states that the CPI compiled in May 2026 was applicable for indexation purposes in July 2026, providing a concrete example of the lag between CPI measurement and financial indexation.
 
 https://www.statice.is/publications/news-archive/prices/consumer-price-index-in-may-2026/
@@ -20,7 +20,7 @@ Use in model:
 
 ## IMF — Iceland 2026 Article IV
 
-**Iceland: 2026 Article IV Consultation — Staff Report**  
+**Iceland: 2026 Article IV Consultation — Staff Report**
 IMF Country Report No. 2026/208, July 2026.
 
 https://www.imf.org/en/publications/cr/issues/2026/07/29/iceland-2026-article-iv-consultation-press-release-and-staff-report-578170
@@ -37,7 +37,7 @@ Use in model:
 
 ## IMF — Iceland 2023 financial-sector stress testing
 
-**Financial Sector Assessment Program — Technical Note on Stress Testing and Systemic Risk Analysis**  
+**Financial Sector Assessment Program — Technical Note on Stress Testing and Systemic Risk Analysis**
 IMF Country Report No. 23/276, July 2023.
 
 https://www.elibrary.imf.org/view/journals/002/2023/276/article-A001-en.xml
@@ -57,7 +57,7 @@ Use in model:
 
 ## Central Bank of Iceland — indexation and monetary policy
 
-**Verðtrygging og peningastefna**  
+**Verðtrygging og peningastefna**
 Ásgeir Daníelsson, Central Bank of Iceland, February 2009.
 
 https://sedlabanki.is/frettir-og-utgefid-efni/grein/2009-02-02-1--rit-Verdtrygging-og-peningastefna

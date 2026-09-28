@@ -1,0 +1,42 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.19"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Run lint checks
+        run: uv run ruff check .
+
+      - name: Run formatting checks
+        run: uv run ruff format --check .
+
+      - name: Run type checks
+        run: uv run mypy src tests
+
+      - name: Exercise command-line interface
+        run: uv run ecodeling --version

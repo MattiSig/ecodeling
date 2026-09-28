@@ -47,16 +47,16 @@ Additional rules:
 
 ---
 
-## [ ] Phase 00 — Repository and toolchain foundation
+## [x] Phase 00 — Repository and toolchain foundation
 
 References: `specs/17_implementation_architecture.md`, `specs/18_v0_1_build_plan.md`
 
-- [ ] Create `pyproject.toml`, `uv.lock`, the `src/ecodeling/` package, and `tests/` layout.
-- [ ] Configure pytest, Hypothesis, Ruff, and mypy with strict settings appropriate for a new codebase.
-- [ ] Add a minimal Typer CLI exposing `ecodeling --version` and `ecodeling validate`.
-- [ ] Add `.gitignore` entries for Python, Node, simulation outputs, caches, databases, and local environment files.
-- [ ] Add CI that installs locked dependencies and runs tests, lint, formatting checks, and type checks.
-- [ ] Document local setup and quality commands in the root README.
+- [x] Create `pyproject.toml`, `uv.lock`, the `src/ecodeling/` package, and `tests/` layout.
+- [x] Configure pytest, Hypothesis, Ruff, and mypy with strict settings appropriate for a new codebase.
+- [x] Add a minimal Typer CLI exposing `ecodeling --version` and `ecodeling validate`.
+- [x] Add `.gitignore` entries for Python, Node, simulation outputs, caches, databases, and local environment files.
+- [x] Add CI that installs locked dependencies and runs tests, lint, formatting checks, and type checks.
+- [x] Document local setup and quality commands in the root README.
 
 Verification gate:
 
@@ -337,3 +337,7 @@ Baseline: <commit hash before the pass or n/a>
 Verification: <commands and concise result>
 Notes: <decisions, deviations, or blocker>
 ```
+2026-09-28 — Phase 00 — COMPLETE
+Baseline: n/a (the workspace contained an empty `.git` directory and no valid repository)
+Verification: `uv sync --all-groups`; `uv run pytest` (3 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version` (all passed)
+Notes: Initialized the repository on `main`; pinned Python 3.12 and uv 0.12.19 for CI; established `src/ecodeling`, strict quality tooling, the Typer foundation CLI, and root-only build-output ignores so the repository-owned build skill remains tracked.
