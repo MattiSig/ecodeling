@@ -11,7 +11,7 @@ Every `$build` pass must follow this sequence:
 3. Select the first phase whose heading starts with `## [ ]`. Never skip ahead.
 4. Implement only that phase. Check subtask boxes as they are completed.
 5. Run every command in the phase's verification gate.
-6. If the gate passes, change the phase heading to `## [x]`, add a dated entry to the build log, commit the complete phase, and stop.
+6. If the gate passes, change the phase heading to `## [x]`, add a dated entry with the pre-phase baseline commit and verification evidence to the build log, commit the complete phase, and stop.
 7. If blocked or interrupted, leave the phase heading unchecked, preserve truthful subtask state, add a build-log entry describing the blocker, and stop.
 
 Additional rules:
@@ -43,7 +43,7 @@ Additional rules:
 - [ ] New public behavior is documented where users or later phases need it.
 - [ ] No secrets, generated bulk outputs, local databases, or caches are tracked.
 - [ ] `git diff --check` passes and the worktree contains only intended changes.
-- [ ] The build log records the commands run and the resulting commit.
+- [ ] The build log records the pre-phase baseline and verification commands; the resulting commit uses the required `phase NN:` subject.
 
 ---
 
@@ -333,7 +333,7 @@ Append one entry per pass. Never rewrite earlier entries.
 
 ```text
 YYYY-MM-DD — Phase NN — COMPLETE|BLOCKED
-Commit: <hash or n/a>
+Baseline: <commit hash before the pass or n/a>
 Verification: <commands and concise result>
 Notes: <decisions, deviations, or blocker>
 ```
