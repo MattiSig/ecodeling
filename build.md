@@ -131,16 +131,16 @@ Verification gate: standard quality suite plus a 600-month seeded integration ru
 
 Acceptance: the micro model produces auditable principal, payment, net-worth, default, and bank-asset series under a shared CPI path.
 
-## [ ] Phase 05 — Replay v0 and visual accounting audit
+## [x] Phase 05 — Replay v0 and visual accounting audit
 
 References: `specs/14_metrics_and_outputs.md`, `specs/17_implementation_architecture.md`, `specs/22_interactive_web_experience.md`
 
-- [ ] Define replay schema version `0` for the micro simulation: manifest, timeline, snapshots, flows, events, representative agents, and series.
-- [ ] Implement deterministic representative-household selection and stable identifiers.
-- [ ] Export a compact canonical replay fixture from the micro simulation.
-- [ ] Build a minimal internal browser page that steps and scrubs through principal, payments, revaluations, net worth, and bank assets.
-- [ ] Link visible changes to source ledger event IDs and show both sides of each revaluation.
-- [ ] Add schema, reconciliation, rendering, and basic browser interaction tests.
+- [x] Define replay schema version `0` for the micro simulation: manifest, timeline, snapshots, flows, events, representative agents, and series.
+- [x] Implement deterministic representative-household selection and stable identifiers.
+- [x] Export a compact canonical replay fixture from the micro simulation.
+- [x] Build a minimal internal browser page that steps and scrubs through principal, payments, revaluations, net worth, and bank assets.
+- [x] Link visible changes to source ledger event IDs and show both sides of each revaluation.
+- [x] Add schema, reconciliation, rendering, and basic browser interaction tests.
 
 Verification gate: Python quality suite, replay reconciliation tests, frontend unit tests, and one Playwright smoke test of timeline inspection.
 
@@ -361,3 +361,8 @@ Notes: Added a reference-index-aware contract registry and fixed-coupon annuity 
 Baseline: 3d6efe8cf13101dc9f1b7c6c362b22703c677263
 Verification: `uv sync --all-groups`; `uv run pytest` (51 passed, including the 1,000-household/two-bank 600-month seeded run); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `git diff --check` (all passed)
 Notes: Added deterministic heterogeneous household/bank registries, externally supplied exact CPI and income paths, ledger-backed income/consumption settlement, mortgage payment and CPI revaluation, persistent arrears with interest capitalization, zero-recovery default write-downs, and household/cohort/bank/aggregate outputs. External settlement claims are mirrored by foreign-sector liabilities; paired nominal/indexed runs regenerate identical populations and share paths while applying the documented coupon/indexation distinction. A derived ledger balance cache and cached annuity factors make the long-run audit tractable without changing journal authority or monetary rounding.
+
+2026-09-29 — Phase 05 — COMPLETE
+Baseline: 4e423f9a753d05da917e09414df2fab8a5824a91
+Verification: `uv sync --all-groups`; `uv run pytest` (56 passed, including the 1,000-household 600-month accounting run and replay reconciliation/regression tests); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm ci`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Added strict replay schema v0 and canonical JSON export as a presentation derivative of authoritative micro outputs and ledger entries. Deterministic policy-cohort selection retains real stable household IDs; visible stocks and payment flows reconcile exactly, and each representative CPI change exposes its source entry plus mirrored borrower-liability/lender-asset postings. The compact six-month fixture and dependency-light internal audit page establish the first vertical slice without introducing the later public Lit component or a browser economic engine.

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ecodeling replay v0 audit</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Internal accounting audit · replay schema v0</p>
+        <h1>Follow the mortgage, entry by entry.</h1>
+        <p id="run-summary">Loading authoritative replay…</p>
+      </header>
+
+      <section class="controls" aria-label="Replay controls">
+        <button id="previous" type="button">Previous</button>
+        <label for="month">Month <strong id="month-label">—</strong></label>
+        <input id="month" type="range" min="0" max="0" value="0" />
+        <button id="next" type="button">Next</button>
+        <label for="representative">Representative household</label>
+        <select id="representative"></select>
+      </section>
+
+      <section id="metrics" class="metrics" aria-live="polite"></section>
+
+      <section class="audit-grid">
+        <article>
+          <p class="eyebrow">Recorded household track</p>
+          <h2 id="household-title">—</h2>
+          <dl id="household-values"></dl>
+        </article>
+        <article id="provenance">
+          <p class="eyebrow">Ledger provenance</p>
+          <h2>Selected mortgage change</h2>
+          <div id="event-detail">No CPI revaluation in this month.</div>
+        </article>
+      </section>
+
+      <p id="error" role="alert" hidden></p>
+    </main>
+    <script type="module" src="app.mjs"></script>
+  </body>
+</html>

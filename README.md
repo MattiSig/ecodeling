@@ -131,3 +131,26 @@ The comparison regenerates the same opening population from the common seed and 
 the same income and CPI observations. Only the documented nominal coupon versus indexed-principal
 contract structure differs. Output metadata includes scenario, seed, canonical configuration hash,
 run identity, regime, and exact timeline.
+
+## Replay v0 accounting audit
+
+Phase 05 provides a strict Pydantic replay-v0 contract in `ecodeling.reporting.replay`. The exporter
+selects actual simulated representatives by a declared deterministic cohort rule, copies monthly
+stocks and flows from authoritative outputs, and links representative CPI revaluations to the
+source ledger entry and its mirrored borrower-liability/lender-asset postings. Export fails when
+visible stocks, payment flows, tracks, timelines, or ledger references do not reconcile exactly.
+Money is nominal whole ISK; CPI is an integer price index; unavailable fields remain absent or null
+rather than being silently replaced with zero.
+
+The checked `web/internal-audit/replay-v0.json` is a six-month, 20-household canonical fixture. To
+regenerate it and run the small internal scrubber's tests:
+
+```bash
+uv run python scripts/generate_replay_v0.py
+npm ci
+npm test
+npm run test:browser
+```
+
+The page is an internal vertical-slice audit tool, not the later public web component. It steps or
+scrubs the completed replay without recalculating any economic transition in JavaScript.

@@ -40,3 +40,21 @@ jobs:
 
       - name: Exercise command-line interface
         run: uv run ecodeling --version
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install browser audit dependencies
+        run: npm ci
+
+      - name: Run browser audit unit tests
+        run: npm test
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser audit smoke test
+        run: npm run test:browser
