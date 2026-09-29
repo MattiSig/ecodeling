@@ -249,16 +249,16 @@ Verification gate: standard quality suites on both stacks, cross-language contra
 
 Acceptance: the browser can consume an immutable, compact replay without importing Python internals or recalculating economics.
 
-## [ ] Phase 13 — Public web component foundation
+## [x] Phase 13 — Public web component foundation
 
 References: `specs/22_interactive_web_experience.md`
 
-- [ ] Create the Vite/Lit/TypeScript package with D3, Vitest, Playwright, formatting, linting, and type checks.
-- [ ] Implement replay loading, validation, timeline state, selection state, and error boundaries.
-- [ ] Define the visual system: typography, colors, sector shapes, flow/stock encodings, spacing, motion, and chart conventions.
-- [ ] Implement responsive shell, loading/error/static states, keyboard operation, and reduced-motion primitives.
-- [ ] Package the experience as an embeddable custom element with documented attributes and events.
-- [ ] Add component, accessibility, responsive, and embedding tests.
+- [x] Create the Vite/Lit/TypeScript package with D3, Vitest, Playwright, formatting, linting, and type checks.
+- [x] Implement replay loading, validation, timeline state, selection state, and error boundaries.
+- [x] Define the visual system: typography, colors, sector shapes, flow/stock encodings, spacing, motion, and chart conventions.
+- [x] Implement responsive shell, loading/error/static states, keyboard operation, and reduced-motion primitives.
+- [x] Package the experience as an embeddable custom element with documented attributes and events.
+- [x] Add component, accessibility, responsive, and embedding tests.
 
 Verification gate: frontend quality suite and Playwright checks at representative desktop/mobile widths with normal and reduced motion.
 
@@ -401,3 +401,8 @@ Notes: Added a validated `batch` workflow with a 10,000-run safety bound, spawn-
 Baseline: e9da824ebad39679ceabe0ad3825f3a247618acb
 Verification: `uv sync --all-groups`; `uv run pytest` (90 passed, including replay-v1 pairing, reconciliation, size, compatibility, deterministic compression/hash, and canonical-fixture cases); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run python scripts/generate_replay_v1.py`; `npm test` (2 Python/TypeScript-facing contract suites passed); `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Promoted the browser boundary to a strict paired schema v1 while retaining v0 as the internal micro-accounting audit contract. The exporter aligns nominal/indexed timelines and common-random-number provenance, reconstructs month-end sector stocks from ledger postings, and carries recorded sector flows, typed economic events, stable matched representative households, chart aggregates, and all five required distributional dimensions. Exact whole-ISK aggregates, debt-service flows, and cohort totals reconcile at zero tolerance before serialization. Government and central-bank stock fields are explicitly null because those balance sheets are not modeled. Canonical key-sorted JSON, deterministic timestamp-free gzip, an uncompressed-size cap, explicit v0/future-version errors, a generated JSON Schema, and shared Python/browser validation protect the presentation contract. The checked 18-month canonical pair is 293,688 bytes uncompressed and 24,709 bytes compressed; its sidecar records the canonical SHA-256.
+
+2026-09-29 — Phase 13 — COMPLETE
+Baseline: 008dd3ca5e69924bfa54bc1813bfe0cd3f38c9b6
+Verification: `uv sync --all-groups`; `uv run pytest` (90 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm ci`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (2 legacy/contract and 8 Vitest tests passed); `npm run build:web`; `npm run test:browser` (11 passed across desktop, mobile, and reduced-motion projects; 4 project-specific skips); `npm audit` (0 vulnerabilities); `git diff --check` (all passed)
+Notes: Added an embeddable Lit custom element whose stable attributes, methods, composed events, and fallback slot expose validated replay-v1 loading plus independent timeline and selection state without implementing economic transitions. JSON and gzip inputs fail into typed network, decoding, or compatibility states; published provenance remains visible after successful validation. The Organic visual system packages Fraunces and defines sand/sage/clay sector geometry, distinct future stock/flow and chart conventions, a responsive month ribbon, keyboard navigation, static mode, and reduced-motion behavior. Vitest and Playwright cover component state, loading failures, accessibility, responsive containment, keyboard operation, reduced motion, and compatibility with the existing internal audit page. CI now runs the complete frontend quality and production-build gate, and the pinned dependency tree has no known advisories.

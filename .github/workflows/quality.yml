@@ -53,6 +53,13 @@ jobs:
       - name: Run browser audit unit tests
         run: npm test
 
+      - name: Check public web component
+        run: |
+          npm run typecheck:web
+          npm run lint:web
+          npm run format:check
+          npm run build:web
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 

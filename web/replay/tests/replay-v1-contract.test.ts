@@ -6,7 +6,9 @@ import { gunzipSync } from "node:zlib";
 import type { ReplayBundleV1 } from "../replay-v1-contract.d.ts";
 import { validateReplayV1 } from "../replay-v1-contract.mjs";
 
-const compressed = readFileSync(new URL("../canonical-v1.json.gz", import.meta.url));
+const compressed = readFileSync(
+  new URL("../canonical-v1.json.gz", import.meta.url),
+);
 const canonical = gunzipSync(compressed);
 const bundle = JSON.parse(canonical.toString("utf8")) as ReplayBundleV1;
 const schema = JSON.parse(
@@ -15,7 +17,10 @@ const schema = JSON.parse(
 
 test("TypeScript contract accepts the canonical Python replay", () => {
   assert.equal(validateReplayV1(bundle, canonical.byteLength), bundle);
-  assert.deepEqual(bundle.runs.map((run) => run.regime), ["nominal", "indexed"]);
+  assert.deepEqual(
+    bundle.runs.map((run) => run.regime),
+    ["nominal", "indexed"],
+  );
   assert.ok(bundle.sector_flows.some((flow) => flow.flow_type === "imports"));
   assert.ok(bundle.events.some((event) => event.event_type === "FX_SHOCK"));
   assert.equal(schema.title, "ReplayBundleV1");
@@ -30,7 +35,10 @@ test("contract rejects incompatible, oversized, and drifting bundles", () => {
   assert.throws(
     () =>
       validateReplayV1(
-        { ...bundle, manifest: { ...bundle.manifest, maximum_uncompressed_bytes: 1 } },
+        {
+          ...bundle,
+          manifest: { ...bundle.manifest, maximum_uncompressed_bytes: 1 },
+        },
         canonical.byteLength,
       ),
     /payload-size limit/,

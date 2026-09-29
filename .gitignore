@@ -13,6 +13,7 @@ htmlcov/
 venv/
 /dist/
 /build/
+web/public/dist/
 *.egg-info/
 
 # Node and frontend outputs

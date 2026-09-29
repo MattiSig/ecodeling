@@ -228,6 +228,28 @@ uv run pytest tests/unit/test_replay_v1.py tests/regression/test_replay_v1_fixtu
 npm test
 ```
 
+## Public web component
+
+Phase 13 provides the embeddable `<ecodeling-experience>` foundation in `web/public/`. It loads
+JSON or gzip-compressed replay v1 data, validates compatibility before exposing state, and keeps
+timeline and selection changes behind a documented custom-element API. The shell includes explicit
+empty, loading, error, fallback, static, and reduced-motion states. It remains a replay reader: no
+economic transition is calculated in the browser.
+
+```bash
+npm ci
+npm run typecheck:web
+npm run lint:web
+npm run format:check
+npm test
+npm run build:web
+npm run test:browser
+```
+
+The canonical development host is available at `/web/public/` under `npm run dev:web`. Attributes,
+events, methods, fallback slots, and the visual encoding system are documented in
+[`web/public/README.md`](web/public/README.md).
+
 ## Endogenous firms, markets, and CPI
 
 Phase 06 adds a staged real-economy simulation in `ecodeling.economy`. Firms form adaptive demand

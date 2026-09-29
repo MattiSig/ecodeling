@@ -1,13 +1,37 @@
 {
-  "name": "ecodeling-internal-replay-audit",
+  "name": "ecodeling-web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test web/internal-audit/tests/*.test.mjs web/replay/tests/*.test.ts",
-    "test:browser": "playwright test --config web/internal-audit/playwright.config.mjs"
+    "build:web": "vite build --config web/public/vite.config.ts",
+    "dev:web": "vite --config web/public/vite.config.ts",
+    "format": "prettier --write package.json web/public web/replay/tests",
+    "format:check": "prettier --check package.json web/public web/replay/tests",
+    "lint:web": "eslint web/public web/replay/tests",
+    "test": "node --test web/internal-audit/tests/*.test.mjs web/replay/tests/*.test.ts && vitest run --config web/public/vitest.config.ts",
+    "test:browser": "playwright test --config web/public/playwright.config.ts",
+    "typecheck:web": "tsc --project web/public/tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "5.2.8",
+    "d3": "7.9.0",
+    "lit": "3.3.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.55.1"
+    "@axe-core/playwright": "4.10.2",
+    "@eslint/js": "9.36.0",
+    "@playwright/test": "1.55.1",
+    "@types/d3": "7.4.3",
+    "@types/node": "24.5.2",
+    "eslint": "9.36.0",
+    "eslint-plugin-lit": "2.1.1",
+    "globals": "16.4.0",
+    "jsdom": "27.0.0",
+    "prettier": "3.6.2",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.44.1",
+    "vite": "7.3.6",
+    "vitest": "4.1.11"
   }
 }
