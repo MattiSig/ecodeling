@@ -219,16 +219,16 @@ Verification gate: standard quality suite plus regeneration of a small version-c
 
 Acceptance: one documented command produces a complete, reproducible paired experiment and its publication-ready analytical figures.
 
-## [ ] Phase 11 — Monte Carlo and sensitivity experiments
+## [x] Phase 11 — Monte Carlo and sensitivity experiments
 
 References: `specs/15_calibration_iceland.md`, `specs/16_validation_and_testing.md`, `specs/18_v0_1_build_plan.md`
 
-- [ ] Implement independent-seed and paired-seed batch execution with bounded parallelism.
-- [ ] Implement alpha sweeps and the specified sensitivity parameters.
-- [ ] Persist run-level results separately from derived summaries.
-- [ ] Report distributions, uncertainty, failure counts, and numerical-invalidity reasons.
-- [ ] Make interrupted batches safely resumable without duplicating completed runs.
-- [ ] Test serial/parallel equivalence, pairing, resume behavior, and aggregation correctness.
+- [x] Implement independent-seed and paired-seed batch execution with bounded parallelism.
+- [x] Implement alpha sweeps and the specified sensitivity parameters.
+- [x] Persist run-level results separately from derived summaries.
+- [x] Report distributions, uncertainty, failure counts, and numerical-invalidity reasons.
+- [x] Make interrupted batches safely resumable without duplicating completed runs.
+- [x] Test serial/parallel equivalence, pairing, resume behavior, and aggregation correctness.
 
 Verification gate: standard quality suite plus a reduced CI batch exercising pairing, parallel execution, resume, and summary generation.
 
@@ -391,3 +391,8 @@ Notes: Added an exact annual-basis-point Taylor-like rule with smoothing, config
 Baseline: 6064e6d613dccfa718b859021b0558e0c2041e9a
 Verification: `uv sync --all-groups`; `uv run pytest` (82 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run python scripts/generate_phase10_golden.py`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Added `run`, `shock-pair`, and `compare` workflows. A complete comparison executes nominal/indexed regimes against their own no-shock counterfactuals with common initialization and shocks, persists Zstandard-compressed Parquet aggregates/cohorts/bank series plus metadata, parameter snapshots, and typed event summaries, and calculates aligned long-form impulse responses. Bank credit losses are read from authoritative default ledger postings. The deterministic SVG report contains the six core paired mechanisms and an initial-income-quintile consumption comparison; charts remain Python reporting derivatives rather than a second economic engine. The checked 20-household fixture and end-to-end CLI tests regenerate all four paths. Pandas and PyArrow activate the already-locked analytical-output architecture.
+
+2026-09-29 — Phase 11 — COMPLETE
+Baseline: f3b2158095f6195092c432197ee24ed52fd5e083
+Verification: `uv sync --all-groups`; `uv run pytest` (86 passed, including reduced serial/parallel, paired/independent seed, resume, all-sensitivity-axis, aggregation, and CLI batch cases); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Added a validated `batch` workflow with a 10,000-run safety bound, spawn-based process parallelism, common-random-number paired seeds, and deterministic independent seed derivation. Alpha and the specified shock, lag, import-share, maturity, price-adjustment, policy-response, expected-inflation, consumption-propensity, and default-threshold axes form an explicit Cartesian grid. Stable task identities and atomic terminal records make interrupted batches resumable without rerunning completed work; raw complete, failed, and numerically invalid run records remain separate from regenerated JSON/Parquet summaries. Summaries report distributions, standard errors, 95% normal-approximation intervals, quantiles, failure reasons, and paired variant-minus-reference differences matched by seed group. The manifest distinguishes stylized mechanism experiments from empirical calibration and records omitted channels and sensitivity coverage; execution worker count does not affect scientific identity.

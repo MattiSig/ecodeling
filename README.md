@@ -61,6 +61,35 @@ one clearing bank, so bank reporting has one explicitly identified row per month
 are fixed from initial reporting-month labor income with stable household IDs as the deterministic
 tie-breaker.
 
+## Monte Carlo and sensitivity batches
+
+The `batch` command executes a bounded Cartesian grid of mortgage-indexation alpha values and
+allowlisted sensitivity axes across explicit seed replications. A paired design uses the same
+master seed for every parameter variant in a seed group, preserving common initialization and
+named shock streams. An independent design derives a stable, distinct 64-bit seed for every
+variant/replication combination.
+
+```bash
+uv run ecodeling batch batch-config.json --output outputs/my-batch
+```
+
+The batch JSON contains `model` (a normal model configuration), `seeds`, `seed_design`,
+`max_workers`, `alpha_values`, and optional `sensitivities`. Supported sensitivity names are
+`shock_magnitude`, `indexation_lag_months`, `import_share_bps`, `loan_maturity_months`,
+`price_adjustment_bps`, `policy_phi_pi`, `expected_inflation_bps`,
+`consumption_propensity_bps`, and `default_after_arrears_months`. Price adjustment is the explicit
+inverse operational measure of stickiness: smaller adjustment values make prices stickier.
+
+Each run is atomically persisted under its stable task ID before derived summaries are rebuilt.
+Re-running the identical batch and source commit skips terminal run records, so an interrupted
+batch resumes without duplicate simulations. `summary.json` reports completion, numerical
+invalidity, failure reasons, and distributions; `summary.parquet` stores per-variant moments,
+standard errors, 95% normal-approximation uncertainty intervals, and quantiles. Paired batches also
+write `paired_differences.parquet`, using the first declared parameter combination as the explicit
+reference and matching observations by seed group. Run records remain separate and authoritative
+for regeneration. Worker count is an execution setting and does not change batch identity or
+results.
+
 ## Core reproducibility primitives
 
 Phase 01 provides typed IDs, an immutable inclusive monthly clock, frozen Pydantic configuration,

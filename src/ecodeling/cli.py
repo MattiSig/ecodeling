@@ -78,3 +78,19 @@ def compare_command(config: ConfigArgument, output: OutputOption) -> None:
         load_config(config), output, git_commit=current_git_commit()
     )
     typer.echo(f"Wrote {result.experiment_id} to {result.path}")
+
+
+@app.command("batch")
+def batch_command(config: ConfigArgument, output: OutputOption) -> None:
+    """Run or resume a bounded Monte Carlo and sensitivity batch."""
+    from ecodeling.reporting import (
+        current_git_commit,
+        generate_batch,
+        load_batch_config,
+    )
+
+    result = generate_batch(load_batch_config(config), output, git_commit=current_git_commit())
+    typer.echo(
+        f"Wrote {result.batch_id} ({result.run_count} runs, "
+        f"{result.resumed_runs} resumed) to {result.path}"
+    )

@@ -1,5 +1,14 @@
 """Validated analytical and browser-oriented reporting derivatives."""
 
+from ecodeling.reporting.batch import (
+    BatchConfig,
+    BatchOutput,
+    SeedDesign,
+    SensitivityParameter,
+    SensitivitySweep,
+    generate_batch,
+    load_batch_config,
+)
 from ecodeling.reporting.experiment import (
     OutputSet,
     current_git_commit,
@@ -11,12 +20,19 @@ from ecodeling.reporting.experiment import (
 from ecodeling.reporting.replay import ReplayBundle, export_replay_v0
 
 __all__ = [
+    "BatchConfig",
+    "BatchOutput",
     "OutputSet",
     "ReplayBundle",
+    "SeedDesign",
+    "SensitivityParameter",
+    "SensitivitySweep",
     "current_git_commit",
     "export_replay_v0",
+    "generate_batch",
     "generate_regime_comparison",
     "generate_shock_pair",
     "generate_single_run",
+    "load_batch_config",
     "load_config",
 ]
