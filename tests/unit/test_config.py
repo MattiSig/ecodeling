@@ -85,5 +85,5 @@ def test_default_configuration_has_stable_canonical_identity() -> None:
     config = ModelConfig(scenario_id=ScenarioId("baseline"))
 
     assert config.configuration_hash() == (
-        "342e6332031f1815f64c3174fc11582d4c4d3e069330eb920426efb6756d520c"
+        "8bfeb048371c6fd8474549d97f70ff8a3e1e113f2e0db9dfe60297ede4bd92e1"
     )

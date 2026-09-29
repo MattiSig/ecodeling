@@ -59,6 +59,31 @@ class MicroSimulationConfig(FrozenConfigModel):
         return self
 
 
+class RealEconomyConfig(FrozenConfigModel):
+    """Firm, labor, goods-market, and price parameters for the v0.1 economy."""
+
+    firms: Annotated[int, Field(ge=2, le=500)] = 20
+    monthly_wage_isk: Annotated[int, Field(ge=1)] = 450_000
+    productivity_units_per_worker: Annotated[int, Field(ge=1)] = 400
+    capacity_units_per_firm: Annotated[int, Field(ge=1)] = 25_000
+    opening_price_isk: Annotated[int, Field(ge=1)] | None = None
+    markup_bps: Annotated[int, Field(ge=0, le=20_000)] = 0
+    price_adjustment_bps: Annotated[int, Field(ge=0, le=10_000)] = 2_500
+    expectations_adjustment_bps: Annotated[int, Field(ge=0, le=10_000)] = 5_000
+    inventory_target_bps: Annotated[int, Field(ge=0, le=20_000)] = 1_000
+    firing_adjustment_bps: Annotated[int, Field(ge=1, le=10_000)] = 2_500
+    consumption_propensity_bps: Annotated[int, Field(ge=0, le=10_000)] = 10_000
+    opening_household_deposits_isk: Annotated[int, Field(ge=0)] = 450_000
+    firm_cash_buffer_months: Annotated[int, Field(ge=1, le=1_200)] = 120
+
+    @model_validator(mode="after")
+    def validate_capacity_supports_one_worker(self) -> Self:
+        """Reject a capacity below one worker's declared technology."""
+        if self.capacity_units_per_firm < self.productivity_units_per_worker:
+            raise ValueError("firm capacity must support at least one worker")
+        return self
+
+
 class MonetaryPolicyConfig(FrozenConfigModel):
     """Parameters for the later inflation-response policy rule."""
 
@@ -117,6 +142,7 @@ class ModelConfig(FrozenConfigModel):
     simulation: SimulationConfig = Field(default_factory=SimulationConfig)
     indexation: IndexationConfig = Field(default_factory=IndexationConfig)
     micro: MicroSimulationConfig = Field(default_factory=MicroSimulationConfig)
+    real_economy: RealEconomyConfig = Field(default_factory=RealEconomyConfig)
     monetary_policy: MonetaryPolicyConfig = Field(default_factory=MonetaryPolicyConfig)
     shock: ShockConfig = Field(default_factory=ShockConfig)
 

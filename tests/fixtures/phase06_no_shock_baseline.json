@@ -1,0 +1,12 @@
+{
+  "months": 120,
+  "seed": 20260929,
+  "households": 200,
+  "firms": 10,
+  "firm_cash_buffer_months": 180,
+  "cpi_min": 100000,
+  "cpi_max": 100000,
+  "employment_min": 200,
+  "employment_max": 200,
+  "monthly_inflation_abs_max_bps": 0
+}

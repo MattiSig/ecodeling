@@ -146,16 +146,16 @@ Verification gate: Python quality suite, replay reconciliation tests, frontend u
 
 Acceptance: selecting a visible mortgage change reveals the matching ledger event and reconciled borrower/lender entries. This is the first end-to-end vertical slice.
 
-## [ ] Phase 06 — Firms, labor, goods, and endogenous CPI
+## [x] Phase 06 — Firms, labor, goods, and endogenous CPI
 
 References: `specs/06_markets_and_matching.md`, `specs/08_firms.md`, `specs/11_prices_cpi_and_fx.md`
 
-- [ ] Implement firms, employment, wages, production, inventories where specified, and capacity constraints.
-- [ ] Implement staged labor and goods-market matching without order-dependent hidden mutations.
-- [ ] Implement household consumption budgets and firm revenue/cost settlement through the ledger.
-- [ ] Calculate an endogenous consumer price level and monthly/annual inflation.
-- [ ] Add a stable no-shock baseline calibration fixture.
-- [ ] Test market conservation, reproducibility, CPI construction, and bounded baseline behavior.
+- [x] Implement firms, employment, wages, production, inventories where specified, and capacity constraints.
+- [x] Implement staged labor and goods-market matching without order-dependent hidden mutations.
+- [x] Implement household consumption budgets and firm revenue/cost settlement through the ledger.
+- [x] Calculate an endogenous consumer price level and monthly/annual inflation.
+- [x] Add a stable no-shock baseline calibration fixture.
+- [x] Test market conservation, reproducibility, CPI construction, and bounded baseline behavior.
 
 Verification gate: standard quality suite plus a seeded no-shock run meeting declared stability tolerances.
 
@@ -366,3 +366,8 @@ Notes: Added deterministic heterogeneous household/bank registries, externally s
 Baseline: 4e423f9a753d05da917e09414df2fab8a5824a91
 Verification: `uv sync --all-groups`; `uv run pytest` (56 passed, including the 1,000-household 600-month accounting run and replay reconciliation/regression tests); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm ci`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Added strict replay schema v0 and canonical JSON export as a presentation derivative of authoritative micro outputs and ledger entries. Deterministic policy-cohort selection retains real stable household IDs; visible stocks and payment flows reconcile exactly, and each representative CPI change exposes its source entry plus mirrored borrower-liability/lender-asset postings. The compact six-month fixture and dependency-light internal audit page establish the first vertical slice without introducing the later public Lit component or a browser economic engine.
+
+2026-09-29 — Phase 06 — COMPLETE
+Baseline: 715d07f351e6e359a594f137fb11a779bae3e58e
+Verification: `uv sync --all-groups`; `uv run pytest` (62 passed, including generated conservation paths, the 120-month no-shock calibration, and the existing 600-month accounting run); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; default 1,000-household/600-month endogenous no-shock stress run; `npm ci`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Added a separate staged real-economy engine so Phase 04's external-path comparison and replay remain stable. Firms form adaptive sales expectations, match labor from a named stream, settle wages and household purchases through mirrored bank-deposit claims, produce within labor/capacity bounds, carry physical inventories, and partially adjust cost-plus prices without reading CPI. Goods search uses its own named stream and plans against an inventory snapshot before committing state. CPI is an exact sales-weighted firm-price index normalized to 100,000, with monthly and twelve-month rates; the declared baseline fixes wages and uses zero markup to isolate matching/accounting stability before foreign inputs and feedback channels. Adding result-affecting real-economy configuration intentionally changed canonical configuration hashes, so the replay-v0 fixture was regenerated; its analytical values still reconcile unchanged.

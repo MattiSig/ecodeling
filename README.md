@@ -154,3 +154,28 @@ npm run test:browser
 
 The page is an internal vertical-slice audit tool, not the later public web component. It steps or
 scrubs the completed replay without recalculating any economic transition in JavaScript.
+
+## Endogenous firms, markets, and CPI
+
+Phase 06 adds a staged real-economy simulation in `ecodeling.economy`. Firms form adaptive demand
+expectations, hire from a seeded labor-matching stream, pay wages through mirrored deposit claims,
+produce subject to labor technology and capacity, and set cost-plus prices with partial adjustment.
+Households search suppliers using a separate seeded stream; purchases are planned against an
+inventory snapshot before settlement, so no registry-order mutation can claim goods early.
+
+Firm revenue equals household expenditure in the ledger, wage income equals firm payroll, and the
+physical identity `opening inventory + production = sales + closing inventory` is recorded for
+each firm and month. CPI is the sales-weighted price of actual consumer-good transactions,
+normalized to 100,000 at initialization; monthly and twelve-month inflation are derived from that
+series. Prices never read CPI directly. The Phase 06 baseline deliberately uses a zero markup and
+fixed wage, isolating matching and accounting stability before foreign costs and feedback channels
+are introduced in later phases.
+
+```python
+from ecodeling.config.schema import ModelConfig
+from ecodeling.economy import run_economy_simulation
+from ecodeling.identifiers import ScenarioId
+
+result = run_economy_simulation(ModelConfig(scenario_id=ScenarioId("no-shock")))
+print(result.aggregate_months[-1].cpi_level)
+```
