@@ -10,15 +10,15 @@
     },
     {
       "path": "publication/v0.1/canonical-summary.json",
-      "sha256": "b8ebb6e20dc64bebbbbc12abfd763c8f1472d3a4a05a1467e3db8af30b2977b0"
+      "sha256": "4102afdaab29984fe649b328db52a1bc696a0139c5d1608bca0470b31e77bc84"
     },
     {
       "path": "web/replay/canonical-v1.json.gz",
-      "sha256": "23f9c2ccff36ca11666bb10d74fb8469a448bd633357666bc4c7ed116a83d3ba"
+      "sha256": "7a4f8765f738790c4b0b00b72169cc3e5628a773a6e8f1da43c7474ad9f4c58c"
     },
     {
       "path": "web/replay/canonical-v1.metadata.json",
-      "sha256": "b8f8098df518a8075b2c3ea00efb9ec938ab64a365bf8675a9f58a1f71487234"
+      "sha256": "64fc40acc4ff66d659547c082c9025d1ca072a3e428cca85d25578fcebc31dfd"
     },
     {
       "path": "web/replay/replay-v1.schema.json",
@@ -68,5 +68,5 @@
   "calibration_status": "stylized mechanism calibration",
   "release": "0.1.1",
   "replay_schema": 1,
-  "model_source_commit": "working-tree-demand-correction"
+  "model_source_commit": "4965f2f3bcf7f15222f2308221abecb2864a2c72"
 }

@@ -1,7 +1,7 @@
 {
   "calibration_status": "stylized mechanism calibration",
   "model_version": "0.1.1",
-  "model_source_commit": "working-tree-demand-correction",
+  "model_source_commit": "4965f2f3bcf7f15222f2308221abecb2864a2c72",
   "scenario_id": "canonical-replay-v1",
   "seed": 1010,
   "series": {
