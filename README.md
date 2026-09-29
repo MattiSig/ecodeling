@@ -8,6 +8,11 @@ Read the [full specification and recommended reading order](specs/README.md).
 
 Development proceeds one verified phase at a time using the checklist in the [build plan](build.md).
 The repository-owned [`$build` skill](skills/build/SKILL.md) executes exactly one unchecked phase per invocation.
+
+The versioned v0.1 methodology, limitations, audited sources, fallback exports, and reproducibility
+box are indexed in [`publication/v0.1/`](publication/v0.1/README.md). Run the complete clean-checkout
+release gate with `npm run release:verify`; deployment and rollback are documented in
+[`docs/operations.md`](docs/operations.md).
 ## Local development
 
 Ecodeling requires Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Install the

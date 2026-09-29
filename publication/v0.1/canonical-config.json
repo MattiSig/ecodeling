@@ -1,0 +1,62 @@
+{
+  "scenario_id": "canonical-replay-v1",
+  "simulation": {
+    "months": 18,
+    "seed": 1010,
+    "start_month": {"year": 2025, "month": 1}
+  },
+  "indexation": {"mortgage_alpha": 1.0, "lag_months": 1},
+  "micro": {
+    "households": 20,
+    "banks": 1,
+    "mortgage_share": 0.7,
+    "homeowner_share": 0.15,
+    "mortgage_term_months": 600,
+    "default_after_arrears_months": 3,
+    "real_rate_bps": 300,
+    "expected_inflation_bps": 250,
+    "inflation_risk_premium_bps": 50,
+    "credit_spread_bps": 50
+  },
+  "real_economy": {
+    "firms": 4,
+    "monthly_wage_isk": 450000,
+    "productivity_units_per_worker": 400,
+    "capacity_units_per_firm": 25000,
+    "opening_price_isk": null,
+    "markup_bps": 0,
+    "price_adjustment_bps": 2500,
+    "expectations_adjustment_bps": 5000,
+    "inventory_target_bps": 1000,
+    "firing_adjustment_bps": 2500,
+    "consumption_propensity_bps": 10000,
+    "opening_household_deposits_isk": 450000,
+    "firm_cash_buffer_months": 48
+  },
+  "foreign_sector": {
+    "baseline_exchange_rate_index": 100000,
+    "baseline_foreign_price_index": 100000,
+    "import_share_bps": 2500
+  },
+  "monetary_policy": {
+    "inflation_target_annual": 0.025,
+    "neutral_real_rate_annual": 0.02,
+    "initial_policy_rate_annual": 0.045,
+    "phi_pi": 1.5,
+    "smoothing": 0.8,
+    "minimum_rate_annual": 0.0,
+    "maximum_rate_annual": 1.0,
+    "nominal_mortgage_reset_months": 1,
+    "indexed_mortgage_reset_months": 12,
+    "nominal_mortgage_pass_through": 1.0,
+    "indexed_mortgage_pass_through": 0.25,
+    "deposit_rate_pass_through": 0.5,
+    "bank_funding_rate_pass_through": 0.75
+  },
+  "shock": {
+    "kind": "fx_depreciation",
+    "month": 3,
+    "magnitude": 0.1,
+    "persistence": "permanent"
+  }
+}

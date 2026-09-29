@@ -309,18 +309,18 @@ Verification gate: all quality suites plus repeated/colliding request tests, res
 
 Acceptance: a reader can request a safe bounded experiment, receive reproducibility metadata, and replay the result without affecting other users or the canonical story.
 
-## [ ] Phase 17 — Publication hardening and v0.1 release
+## [x] Phase 17 — Publication hardening and v0.1 release
 
 References: all specifications, especially `specs/16_validation_and_testing.md`, `specs/19_research_sources.md`, and `specs/20_blog_post_plan.md`
 
-- [ ] Run the full validation, calibration, paired-experiment, Monte Carlo, replay, API, and browser suites.
-- [ ] Audit empirical statements and calibration inputs against primary sources.
-- [ ] Complete static figure, reduced-motion, textual, and recorded-video fallbacks.
-- [ ] Performance-test canonical loading, playback, and bounded custom jobs; document operating limits.
-- [ ] Complete deployment, backup/cache cleanup, observability, security, and rollback documentation for the CV-owned `/work/ecodeling` route and its vendored assets.
-- [ ] Verify the production CV page, health endpoint, hashed component assets, canonical replay, dark/light host themes, and absence of Laboratory requests when `api-base` is omitted.
-- [ ] Publish versioned canonical configurations, outputs, replay bundle, methodology, limitations, and reproducibility box.
-- [ ] Tag the release only after every v0.1 definition-of-done item in `specs/README.md` is verified.
+- [x] Run the full validation, calibration, paired-experiment, Monte Carlo, replay, API, and browser suites.
+- [x] Audit empirical statements and calibration inputs against primary sources.
+- [x] Complete static figure, reduced-motion, textual, and recorded-video fallbacks.
+- [x] Performance-test canonical loading, playback, and bounded custom jobs; document operating limits.
+- [x] Complete deployment, backup/cache cleanup, observability, security, and rollback documentation for the CV-owned `/work/ecodeling` route and its vendored assets.
+- [x] Verify the production CV page, health endpoint, hashed component assets, canonical replay, dark/light host themes, and absence of Laboratory requests when `api-base` is omitted.
+- [x] Publish versioned canonical configurations, outputs, replay bundle, methodology, limitations, and reproducibility box.
+- [x] Tag the release only after every v0.1 definition-of-done item in `specs/README.md` is verified.
 
 Verification gate: all repository checks, full end-to-end tests in a production-like environment, accessibility audit, and reproducibility rerun from a clean checkout.
 
@@ -427,3 +427,8 @@ Notes: Added a strict allowlisted experiment API with bounded request size, mont
 Baseline: fe0dcd4785018f1ee90ad942bb6b80aa7cb67b21
 Verification: `npm run format:check`; `npm run typecheck:web`; `npm run lint:web`; `npm test` (5 legacy/contract and 18 Vitest tests passed); `npm run build:web`; `ECODELING_API_PORT=8865 ECODELING_WEB_PORT=4273 npm run test:browser` (19 passed, 14 project-specific skips); CV `make validate`; exported `sha256sum -c SHA256SUMS`; local production-style desktop/mobile and dark/light browser inspection with no console errors; Railway health and `/work/ecodeling` returned 200 for the first publication.
 Notes: Changed the publication boundary after the phase implementation. `MattiSig/cv` now owns the native `/work/ecodeling` route and Railway service, while this repository exports checksummed JavaScript, CSS, and the immutable canonical replay through `scripts/export-cv-assets.sh`. The CV page omits `api-base`, so Laboratory is hidden and canonical Story/Explore/Compare playback has no Python-service dependency. The original Organic/Fraunces presentation recorded in the Phase 13–15 history was superseded by a host-inheritable Industrial system using JetBrains Mono, the profile's dark/light tokens, flat one-pixel rules, and gold only for active/model signals. Commits `a9c11ef` and `ebad869` implement the source-side handoff and theme; CV commits `6ff7053` and `52a7391` contain the host route and vendored assets.
+
+2026-09-29 — Phase 17 — COMPLETE
+Baseline: e20ea49919863af2dd6d8e6dc7fee0a10b59c95a
+Verification: clean-copy `npm run release:verify` (`uv sync --locked --all-groups`; 94 pytest cases including 1,000-household/600-month accounting, paired experiments, reduced Monte Carlo, replay, and API; Ruff; mypy; deterministic replay regeneration; 5 legacy/contract and 18 Vitest tests; production build; 19 Playwright passes with 14 project-specific skips); release artifact verifier (15 SHA-pinned files); fallback export (six PNG scenes and 5.2-second WebM); exported `sha256sum -c SHA256SUMS`; CV `make validate`; Railway `/healthz`, `/work/ecodeling`, and versioned assets returned 200; dark/light Chromium inspection had no console errors or Laboratory/API requests; `git diff --check` (all passed)
+Notes: Released package version 0.1.0 with a versioned canonical configuration, replay-derived summary, immutable replay/schema metadata, source-audited methodology and limitations, reproducibility box, operating runbook, static/text/reduced-motion/recorded fallbacks, and an offline CI artifact gate. The live Railway route still carries the pre-release replay's `0.0.0` metadata; its economic run and source commit match the canonical fixture, and the v0.1 CV handoff was checksummed and tested locally. Publishing that new handoff remains a separate explicitly authorized push/deploy. The required local tag is `v0.1.0`.

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Cash-flow and balance-sheet channels in Ecodeling v0.1</title>
+  <desc id="desc">A static comparison of the recorded nominal mortgage cash-flow channel and indexed mortgage principal revaluation channel.</desc>
+  <rect width="1200" height="630" fill="#121316"/>
+  <g font-family="monospace" fill="#e7e5df">
+    <text x="60" y="70" font-size="24" fill="#d8a955">ECODELING / CANONICAL REPLAY V0.1</text>
+    <text x="60" y="112" font-size="18" fill="#8e9199">seed 1010 · permanent 10% FX depreciation · simulated values</text>
+    <path d="M600 155V550" stroke="#2b2e34"/>
+    <text x="60" y="190" font-size="26">NOMINAL / CASH-FLOW</text>
+    <text x="640" y="190" font-size="26">INDEXED / BALANCE-SHEET</text>
+    <g font-size="22">
+      <text x="60" y="260">policy rate → coupon reset</text>
+      <text x="60" y="315">→ payment changes now</text>
+      <text x="60" y="370">→ liquid cash changes</text>
+      <text x="60" y="445" fill="#d8a955">opening debt service</text>
+      <text x="60" y="485">2,560,911 ISK</text>
+      <text x="640" y="260">CPI → principal revaluation</text>
+      <text x="640" y="315">→ net worth changes now</text>
+      <text x="640" y="370">→ future burden changes</text>
+      <text x="640" y="445" fill="#d8a955">closing principal</text>
+      <text x="640" y="485">175,997,237 ISK</text>
+    </g>
+    <text x="60" y="585" font-size="16" fill="#8e9199">Static fallback · authoritative values: web/replay/canonical-v1.json.gz · not an empirical forecast</text>
+  </g>
+</svg>

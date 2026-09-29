@@ -65,3 +65,6 @@ jobs:
 
       - name: Run browser audit smoke test
         run: npm run test:browser
+
+      - name: Verify release artifacts
+        run: uv run python scripts/verify_release_artifacts.py

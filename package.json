@@ -1,7 +1,7 @@
 {
   "name": "ecodeling-web",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "build:web": "vite build --config web/public/vite.config.ts",
@@ -9,6 +9,8 @@
     "format": "prettier --write package.json web/public web/replay/tests",
     "format:check": "prettier --check package.json web/public web/replay/tests",
     "lint:web": "eslint web/public web/replay/tests",
+    "release:fallbacks": "node scripts/export-publication-fallbacks.mjs",
+    "release:verify": "bash scripts/verify-release.sh",
     "test": "node --test web/internal-audit/tests/*.test.mjs web/replay/tests/*.test.ts && vitest run --config web/public/vitest.config.ts",
     "test:browser": "playwright test --config web/public/playwright.config.ts",
     "typecheck:web": "tsc --project web/public/tsconfig.json --noEmit"

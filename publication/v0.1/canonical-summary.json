@@ -1,0 +1,16 @@
+{
+  "calibration_status": "stylized mechanism calibration",
+  "model_version": "0.1.0",
+  "scenario_id": "canonical-replay-v1",
+  "seed": 1010,
+  "series": {
+    "bank_equity_closing_isk": {"indexed": 178398180, "nominal": 102776066},
+    "consumption_closing_isk": {"indexed": 2265538, "nominal": 897608},
+    "cpi_closing_index": {"indexed": 102467, "nominal": 102467},
+    "defaults_peak_households": {"indexed": 3, "nominal": 3},
+    "debt_service_opening_isk": {"indexed": 1604555, "nominal": 2560911},
+    "mortgage_principal_closing_isk": {"indexed": 175997237, "nominal": 105935043},
+    "policy_rate_closing_basis_points": {"indexed": 302, "nominal": 302}
+  },
+  "statement": "Replay-derived descriptive values, not empirical estimates or forecasts."
+}
