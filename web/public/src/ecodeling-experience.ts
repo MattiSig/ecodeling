@@ -26,9 +26,16 @@ import {
   type CohortMeasure,
 } from "./replay-comparison.js";
 import { ReplayState, type ReplaySelection } from "./replay-state.js";
+import {
+  cancelLaboratoryExperiment,
+  createLaboratoryExperiment,
+  LaboratoryError,
+  waitForLaboratoryExperiment,
+  type LaboratoryParameters,
+} from "./laboratory-client.js";
 
 type LoadStatus = "empty" | "loading" | "ready" | "error";
-type ExperienceMode = "story" | "explore" | "compare";
+type ExperienceMode = "story" | "explore" | "compare" | "laboratory";
 type ComparisonView = ReplayRegime | "split";
 
 export interface EcodelingReadyDetail {
@@ -69,6 +76,7 @@ export class EcodelingExperience extends LitElement {
   @property({ type: String }) src = "";
   @property({ type: String, attribute: "initial-month" }) initialMonth = "";
   @property({ type: Boolean, attribute: "static" }) staticMode = false;
+  @property({ type: String, attribute: "api-base" }) apiBase = "/api/v1";
 
   @state() private status: LoadStatus = "empty";
   @state() private replay: ReplayBundleV1 | null = null;
@@ -86,8 +94,21 @@ export class EcodelingExperience extends LitElement {
   @state() private cohortMeasure: CohortMeasure = "consumption_isk";
   @state() private cameraSector: ReplaySector = "households";
   @state() private visible = true;
+  @state() private laboratoryStatus:
+    | "idle"
+    | "submitting"
+    | "queued"
+    | "running"
+    | "completed"
+    | "failed" = "idle";
+  @state() private laboratoryProgress = 0;
+  @state() private laboratoryMessage = "";
+  @state() private customReplay = false;
 
   readonly replayState = new ReplayState();
+  #canonicalReplay: ReplayBundleV1 | null = null;
+  #laboratoryController?: AbortController;
+  #laboratoryStatusUrl = "";
   #abortController?: AbortController;
   #motionQuery?: MediaQueryList;
   #playbackTimer: number | null = null;
@@ -150,6 +171,7 @@ export class EcodelingExperience extends LitElement {
 
   override disconnectedCallback(): void {
     this.#abortController?.abort();
+    this.#laboratoryController?.abort();
     this.#stopTimer();
     this.#intersectionObserver?.disconnect();
     this.#motionQuery?.removeEventListener("change", this.#handleMotionChange);
@@ -253,6 +275,8 @@ export class EcodelingExperience extends LitElement {
       const replay = await loadReplay(this.src, { signal: controller.signal });
       if (controller.signal.aborted) return;
       this.replay = replay;
+      this.#canonicalReplay = replay;
+      this.customReplay = false;
       this.replayState.configure(
         replay.manifest.months,
         this.initialMonth || undefined,
@@ -368,7 +392,7 @@ export class EcodelingExperience extends LitElement {
     return html`
       <section class="ready">
         <nav class="mode-tabs" aria-label="Experience mode">
-          ${(["story", "explore", "compare"] as const).map(
+          ${(["story", "explore", "compare", "laboratory"] as const).map(
             (mode) =>
               html`<button
                 type="button"
@@ -380,7 +404,9 @@ export class EcodelingExperience extends LitElement {
                   ? "Story"
                   : mode === "explore"
                     ? "Explore"
-                    : "Compare"}
+                    : mode === "compare"
+                      ? "Compare"
+                      : "Laboratory"}
               </button>`,
           )}
           <span
@@ -461,19 +487,264 @@ export class EcodelingExperience extends LitElement {
             : nothing}
         </div>
 
-        ${this.mode === "compare"
-          ? this.#renderComparison(replay, month)
-          : html`${this.mode === "story"
-                ? this.#renderStory(scenes, scene)
-                : nothing}
-              <div class="shell-grid">
-                ${this.#renderEconomy(replay, month, scene)}
-                ${this.#renderInspector(replay, month)}
-              </div>
-              ${this.#renderMetrics(replay, month)}`}
+        ${this.mode === "laboratory"
+          ? this.#renderLaboratory()
+          : this.mode === "compare"
+            ? this.#renderComparison(replay, month)
+            : html`${this.mode === "story"
+                  ? this.#renderStory(scenes, scene)
+                  : nothing}
+                <div class="shell-grid">
+                  ${this.#renderEconomy(replay, month, scene)}
+                  ${this.#renderInspector(replay, month)}
+                </div>
+                ${this.#renderMetrics(replay, month)}`}
         ${this.#renderProvenance(replay)}
       </section>
     `;
+  }
+
+  #laboratoryParameters(form: HTMLFormElement): LaboratoryParameters {
+    const data = new FormData(form);
+    const number = (name: string): number => Number(data.get(name));
+    return {
+      months: number("months"),
+      seed: number("seed"),
+      households: number("households"),
+      firms: number("firms"),
+      indexation_lag_months: number("indexation_lag_months"),
+      shock_kind: String(
+        data.get("shock_kind"),
+      ) as LaboratoryParameters["shock_kind"],
+      shock_month: number("shock_month"),
+      shock_magnitude_bps: number("shock_magnitude_bps"),
+      shock_persistence: String(
+        data.get("shock_persistence"),
+      ) as LaboratoryParameters["shock_persistence"],
+      import_share_bps: number("import_share_bps"),
+      price_adjustment_bps: number("price_adjustment_bps"),
+    };
+  }
+
+  async #submitLaboratory(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    this.#laboratoryController?.abort();
+    const controller = new AbortController();
+    this.#laboratoryController = controller;
+    this.laboratoryStatus = "submitting";
+    this.laboratoryProgress = 0;
+    this.laboratoryMessage = "Validating the public parameter set.";
+    try {
+      const job = await createLaboratoryExperiment(
+        this.apiBase,
+        this.#laboratoryParameters(event.currentTarget as HTMLFormElement),
+        { signal: controller.signal },
+      );
+      this.#laboratoryStatusUrl = job.links.status;
+      this.laboratoryStatus = job.status === "completed" ? "running" : "queued";
+      this.laboratoryMessage = job.cached
+        ? "Loading the immutable cached result."
+        : "The experiment is in the bounded worker queue.";
+      const progress = await waitForLaboratoryExperiment(job.links.status, {
+        signal: controller.signal,
+        onProgress: (update) => {
+          this.laboratoryStatus =
+            update.status === "queued" ? "queued" : "running";
+          this.laboratoryProgress = update.progress_percent;
+          this.laboratoryMessage =
+            update.status === "queued"
+              ? "Waiting for a worker process."
+              : "Python is running the paired simulation and replay checks.";
+        },
+      });
+      const replay = await loadReplay(progress.result_url ?? job.links.result, {
+        signal: controller.signal,
+      });
+      this.replay = replay;
+      this.replayState.configure(replay.manifest.months);
+      this.customReplay = true;
+      this.laboratoryStatus = "completed";
+      this.laboratoryProgress = 100;
+      this.laboratoryMessage = `Loaded ${replay.manifest.bundle_id}. Reproducibility metadata is shown below.`;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      this.laboratoryStatus = "failed";
+      this.laboratoryMessage =
+        error instanceof LaboratoryError || error instanceof Error
+          ? error.message
+          : "The custom experiment failed.";
+    }
+  }
+
+  async #cancelLaboratory(): Promise<void> {
+    if (this.#laboratoryStatusUrl === "") return;
+    try {
+      await cancelLaboratoryExperiment(this.#laboratoryStatusUrl);
+      this.#laboratoryController?.abort();
+      this.laboratoryStatus = "idle";
+      this.laboratoryMessage = "The queued experiment was cancelled safely.";
+    } catch (error) {
+      this.laboratoryMessage =
+        error instanceof Error
+          ? `${error.message} The canonical replay is still available.`
+          : "The job could not be cancelled safely.";
+    }
+  }
+
+  #restoreCanonical(): void {
+    if (this.#canonicalReplay === null) return;
+    this.replay = this.#canonicalReplay;
+    this.replayState.configure(
+      this.#canonicalReplay.manifest.months,
+      this.initialMonth || undefined,
+    );
+    this.customReplay = false;
+    this.laboratoryStatus = "idle";
+    this.laboratoryMessage = "Restored the published canonical replay.";
+  }
+
+  #renderLaboratory() {
+    const busy = ["submitting", "queued", "running"].includes(
+      this.laboratoryStatus,
+    );
+    return html`<section class="laboratory" aria-labelledby="laboratory-title">
+      <div class="compare-heading">
+        <div>
+          <p class="eyebrow">Bounded public experiment</p>
+          <h2 id="laboratory-title">Laboratory</h2>
+        </div>
+        <p>
+          Runs execute in isolated Python workers. The browser only receives a
+          validated replay.
+        </p>
+      </div>
+      <form
+        @submit=${(event: SubmitEvent) => void this.#submitLaboratory(event)}
+      >
+        <label
+          >Months<input
+            name="months"
+            type="number"
+            min="6"
+            max="60"
+            value="18"
+            required
+        /></label>
+        <label
+          >Seed<input name="seed" type="number" min="0" value="1010" required
+        /></label>
+        <label
+          >Households<input
+            name="households"
+            type="number"
+            min="10"
+            max="250"
+            value="20"
+            required
+        /></label>
+        <label
+          >Firms<input
+            name="firms"
+            type="number"
+            min="2"
+            max="50"
+            value="4"
+            required
+        /></label>
+        <label
+          >Indexation lag (months)<input
+            name="indexation_lag_months"
+            type="number"
+            min="0"
+            max="24"
+            value="1"
+            required
+        /></label>
+        <label
+          >Shock
+          <select name="shock_kind">
+            <option value="fx_depreciation">FX depreciation</option>
+            <option value="foreign_price_increase">
+              Foreign-price increase
+            </option>
+          </select>
+        </label>
+        <label
+          >Shock month<input
+            name="shock_month"
+            type="number"
+            min="1"
+            max="59"
+            value="3"
+            required
+        /></label>
+        <label
+          >Shock magnitude (basis points)<input
+            name="shock_magnitude_bps"
+            type="number"
+            min="-5000"
+            max="5000"
+            value="1000"
+            required
+        /></label>
+        <label
+          >Persistence
+          <select name="shock_persistence">
+            <option value="permanent">Permanent</option>
+            <option value="one_off">One month</option>
+          </select>
+        </label>
+        <label
+          >Import share (basis points)<input
+            name="import_share_bps"
+            type="number"
+            min="0"
+            max="7500"
+            value="2500"
+            required
+        /></label>
+        <label
+          >Price adjustment (basis points)<input
+            name="price_adjustment_bps"
+            type="number"
+            min="100"
+            max="10000"
+            value="2500"
+            required
+        /></label>
+        <div class="laboratory-actions">
+          <button class="primary" type="submit" ?disabled=${busy}>
+            ${this.laboratoryStatus === "failed"
+              ? "Retry experiment"
+              : "Run experiment"}
+          </button>
+          ${busy
+            ? html`<button
+                type="button"
+                @click=${() => void this.#cancelLaboratory()}
+              >
+                Cancel if queued
+              </button>`
+            : nothing}
+          ${this.customReplay
+            ? html`<button
+                type="button"
+                @click=${() => this.#restoreCanonical()}
+              >
+                Restore canonical replay
+              </button>`
+            : nothing}
+        </div>
+      </form>
+      <div class="laboratory-status" role="status" aria-live="polite">
+        <strong>${this.laboratoryStatus}</strong>
+        <progress max="100" .value=${this.laboratoryProgress}></progress>
+        <span
+          >${this.laboratoryMessage ||
+          "Choose bounded parameters; the canonical replay remains untouched until a result validates."}</span
+        >
+      </div>
+    </section>`;
   }
 
   #renderStory(scenes: StoryScene[], scene: StoryScene) {
@@ -1818,6 +2089,57 @@ export class EcodelingExperience extends LitElement {
       max-width: 48rem;
       margin-bottom: 0;
       line-height: 1.45;
+    }
+    .laboratory {
+      display: grid;
+      gap: 1rem;
+      padding: clamp(1rem, 2.5cqi, 1.7rem);
+      border: 1px solid var(--line);
+      border-radius: 2rem;
+      background: var(--oat);
+    }
+    .laboratory form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+      gap: 0.75rem;
+    }
+    .laboratory label {
+      display: grid;
+      gap: 0.3rem;
+      color: var(--moss-dark);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .laboratory input,
+    .laboratory select {
+      min-width: 0;
+      padding: 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 0.7rem;
+      background: var(--sand);
+      color: var(--ink);
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .laboratory-actions,
+    .laboratory-status {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .laboratory-status {
+      padding: 0.8rem;
+      border-radius: 0.8rem;
+      background: var(--sage);
+    }
+    .laboratory-status strong {
+      text-transform: capitalize;
+    }
+    .laboratory-status progress {
+      width: min(14rem, 100%);
+      accent-color: var(--clay);
     }
     .view-toggle {
       display: flex;

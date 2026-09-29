@@ -11,11 +11,13 @@ requires-python = ">=3.12"
 license = "MIT"
 authors = [{ name = "Ecodeling contributors" }]
 dependencies = [
+    "fastapi>=0.117.0,<0.119.0",
     "numpy>=2.3.0,<3.0.0",
     "pandas>=2.3.0,<4.0.0",
     "pydantic>=2.11.0,<3.0.0",
     "pyarrow>=21.0.0,<24.0.0",
     "typer>=0.19.0,<1.0.0",
+    "uvicorn>=0.36.0,<0.38.0",
 ]
 
 [project.scripts]
@@ -24,6 +26,7 @@ ecodeling = "ecodeling.cli:app"
 [dependency-groups]
 dev = [
     "hypothesis>=6.140.0,<7.0.0",
+    "httpx>=0.28.0,<1.0.0",
     "mypy>=1.18.0,<2.0.0",
     "pytest>=8.4.0,<10.0.0",
     "ruff>=0.13.0,<1.0.0",

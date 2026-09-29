@@ -93,4 +93,36 @@ describe("ecodeling-experience", () => {
     );
     expect(element.textContent).toContain("Static published summary");
   });
+
+  it("keeps the canonical replay installed when a Laboratory request fails", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify(replay)))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { code: "queue_full", message: "Try again shortly." },
+          }),
+          { status: 429, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    const element = document.createElement(
+      "ecodeling-experience",
+    ) as EcodelingExperience;
+    element.src = "/canonical.json";
+    document.body.append(element);
+    await vi.waitFor(() =>
+      expect(element.shadowRoot?.textContent).toContain("embedded-test"),
+    );
+    const laboratory = [...element.shadowRoot!.querySelectorAll("button")].find(
+      (button) => button.textContent?.trim() === "Laboratory",
+    );
+    laboratory?.click();
+    await element.updateComplete;
+    element.shadowRoot?.querySelector("form")?.requestSubmit();
+    await vi.waitFor(() =>
+      expect(element.shadowRoot?.textContent).toContain("Try again shortly."),
+    );
+    expect(element.shadowRoot?.textContent).toContain("embedded-test");
+    expect(element.shadowRoot?.textContent).toContain("2025-01");
+  });
 });

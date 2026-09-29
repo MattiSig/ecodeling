@@ -167,6 +167,35 @@ test("keeps Compare mode accessible and contained on narrow screens", async ({
   ).toBeVisible();
 });
 
+test("runs a browser to API to Python simulation replay workflow", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop",
+    "single full simulation workflow",
+  );
+  const experience = page.locator("ecodeling-experience");
+  await experience.getByRole("button", { name: "Laboratory" }).click();
+  await expect(
+    experience.getByRole("heading", { name: "Laboratory" }),
+  ).toBeVisible();
+  await experience.getByLabel("Months", { exact: true }).fill("6");
+  await experience.getByLabel("Households").fill("10");
+  await experience.getByLabel("Firms").fill("2");
+  await experience.getByLabel("Shock month").fill("2");
+  await experience.getByRole("button", { name: "Run experiment" }).click();
+  await expect(experience.locator(".laboratory-status")).toContainText(
+    "completed",
+    { timeout: 30_000 },
+  );
+  await expect(experience.locator(".provenance")).toContainText(
+    "public-laboratory",
+  );
+  await expect(
+    experience.getByRole("button", { name: "Restore canonical replay" }),
+  ).toBeVisible();
+});
+
 test("matches the deterministic economy-scene baseline", async ({ page }) => {
   const experience = page.locator("ecodeling-experience");
   await experience.evaluate((element) => element.setAttribute("static", ""));

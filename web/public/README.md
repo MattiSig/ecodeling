@@ -21,6 +21,7 @@ Attributes:
 - `src`: JSON or gzip-compressed replay-v1 URL. Omitting it renders the safe empty state.
 - `initial-month`: an optional replay month selected after validation.
 - `static`: disables nonessential motion independently of the operating-system preference.
+- `api-base`: simulation API prefix used by Laboratory mode; defaults to `/api/v1`.
 
 Public methods are `reload()`, `setMonth(index)`, `select(selection)`, `play()`, `pause()`, and
 `restart()`. Story, Explore, and Compare share the selected month, playback state, and selection,
@@ -71,6 +72,14 @@ the baseline, and retains the replay unit. Distribution tables compare the decla
 label their values as cohort totals. Representative households are compared as individuals only
 when counterpart IDs are reciprocal; otherwise the interface says that identities do not
 correspond and falls back to the declared cohort rather than pairing unrelated people.
+
+## Laboratory mode
+
+Laboratory mode submits only the server's allowlisted bounded parameters, reports queued/running
+progress, offers safe queued cancellation and retry after structured failures, and loads the
+completed replay through the same replay-v1 validator as the canonical article. A custom result is
+not installed until validation succeeds. Failures therefore leave the canonical replay intact,
+and “Restore canonical replay” returns to the published bundle after a successful experiment.
 
 ## Commands
 

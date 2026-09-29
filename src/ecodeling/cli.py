@@ -94,3 +94,14 @@ def batch_command(config: ConfigArgument, output: OutputOption) -> None:
         f"Wrote {result.batch_id} ({result.run_count} runs, "
         f"{result.resumed_runs} resumed) to {result.path}"
     )
+
+
+@app.command("serve")
+def serve_command(
+    host: Annotated[str, typer.Option(help="Service bind address.")] = "127.0.0.1",
+    port: Annotated[int, typer.Option(min=1, max=65_535, help="Service TCP port.")] = 8000,
+) -> None:
+    """Serve the bounded public simulation API."""
+    import uvicorn
+
+    uvicorn.run("ecodeling.service.api:app", host=host, port=port)

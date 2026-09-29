@@ -250,6 +250,34 @@ The canonical development host is available at `/web/public/` under `npm run dev
 events, methods, fallback slots, and the visual encoding system are documented in
 [`web/public/README.md`](web/public/README.md).
 
+## Bounded simulation service and Laboratory
+
+Phase 16 exposes custom experiments through a FastAPI service while keeping Python as the only
+economic engine. Start it beside the Vite development host:
+
+```bash
+uv run ecodeling serve
+npm run dev:web
+```
+
+`POST /api/v1/experiments` accepts only the documented public fields: months (6–60), seed,
+households (10–250), firms (2–50), indexation lag, shock kind/month/magnitude/persistence, import
+share, and price adjustment. Unknown fields and values outside those bounds fail with structured
+errors. The service caps request bodies, pending jobs, worker processes, and replay size. Jobs run
+in bounded worker processes using the installed `ecodeling` package; the browser polls status and
+loads only a completed, replay-v1-validated artifact.
+
+SQLite stores job metadata under `runs/service/` by default and gzip replay artifacts remain on the
+filesystem. Cache identity is the model version plus the complete canonical model-configuration
+hash. Identical concurrent requests therefore share one job, completed responses are immutable,
+and a failed or safely cancelled identity can be retried. Set `ECODELING_SERVICE_DATA` to relocate
+service state. `GET /docs` publishes the exact request and response schema.
+
+The component's Laboratory mode uses `/api/v1` by default; hosts can set `api-base`. A custom
+failure never replaces the canonical replay, and a successful custom replay can be replaced with
+the canonical publication using “Restore canonical replay.” Running jobs are not forcibly killed;
+cancellation succeeds only while an executor future is still safely queued.
+
 ## Endogenous firms, markets, and CPI
 
 Phase 06 adds a staged real-economy simulation in `ecodeling.economy`. Firms form adaptive demand

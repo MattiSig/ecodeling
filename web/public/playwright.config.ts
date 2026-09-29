@@ -21,10 +21,19 @@ export default defineConfig({
       ? { executablePath: systemChromium }
       : {},
   },
-  webServer: {
-    command: "npm run dev:web -- --host 127.0.0.1 --port 4173",
-    cwd: ".",
-    url: "http://127.0.0.1:4173/web/public/",
-    reuseExistingServer: false,
-  },
+  webServer: [
+    {
+      command:
+        "env UV_CACHE_DIR=/tmp/ecodeling-uv-cache ECODELING_SERVICE_DATA=/tmp/ecodeling-playwright-service uv run uvicorn ecodeling.service.api:app --host 127.0.0.1 --port 8765",
+      cwd: ".",
+      url: "http://127.0.0.1:8765/docs",
+      reuseExistingServer: false,
+    },
+    {
+      command: "npm run dev:web -- --host 127.0.0.1 --port 4173",
+      cwd: ".",
+      url: "http://127.0.0.1:4173/web/public/",
+      reuseExistingServer: false,
+    },
+  ],
 });

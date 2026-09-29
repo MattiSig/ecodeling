@@ -294,16 +294,16 @@ Verification gate: frontend suite plus end-to-end playback over the full canonic
 
 Acceptance: readers can see where and why the nominal and indexed economies diverge without implying false agent correspondence.
 
-## [ ] Phase 16 — Simulation API, cache, and Laboratory mode
+## [x] Phase 16 — Simulation API, cache, and Laboratory mode
 
 References: `specs/17_implementation_architecture.md`, `specs/22_interactive_web_experience.md`
 
-- [ ] Implement allowlisted public parameters with bounds on population, months, concurrency, and output size.
-- [ ] Implement create/status/result endpoints and structured validation/failure responses.
-- [ ] Run jobs in bounded worker processes using the same installed model package as the CLI.
-- [ ] Cache immutable results by model version plus canonical configuration hash using SQLite metadata and filesystem artifacts.
-- [ ] Implement Laboratory controls, progress, cancellation where safe, retry, and fallback to the canonical replay.
-- [ ] Add API contract, security-limit, cache, failure, concurrency, and browser end-to-end tests.
+- [x] Implement allowlisted public parameters with bounds on population, months, concurrency, and output size.
+- [x] Implement create/status/result endpoints and structured validation/failure responses.
+- [x] Run jobs in bounded worker processes using the same installed model package as the CLI.
+- [x] Cache immutable results by model version plus canonical configuration hash using SQLite metadata and filesystem artifacts.
+- [x] Implement Laboratory controls, progress, cancellation where safe, retry, and fallback to the canonical replay.
+- [x] Add API contract, security-limit, cache, failure, concurrency, and browser end-to-end tests.
 
 Verification gate: all quality suites plus repeated/colliding request tests, resource-limit tests, and a full browser → API → simulation → replay workflow.
 
@@ -416,3 +416,8 @@ Notes: Replaced the empty public stage with a replay-driven Organic economic cir
 Baseline: 3ef28fb27b99be649da263b55d8ab0fb1eaa52cf
 Verification: `uv sync --all-groups`; `uv run pytest` (90 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (5 legacy/contract and 13 Vitest tests passed); `npm run build:web`; `npm run test:browser` (18 passed across desktop, mobile, and reduced-motion projects; 12 project-specific skips, including full 18-month paired playback with no drift); `git diff --check` (all passed)
 Notes: Added replay-validated nominal, indexed, and split-screen Compare views on one timeline, playback state, selection, shared sector camera, and selected metric. Seven authoritative paired series render as synchronized solid/dashed charts with one visible time rail and exact indexed-minus-nominal readouts labeled by unit and nominal baseline. Declared distribution cohorts expose like-for-like totals and differences; representative agents are treated as matched individuals only for reciprocal counterpart IDs, otherwise the UI explicitly falls back to the declared cohort. Pairing validation now checks run IDs, seed, shared initialization and shock path, named streams, series timelines, and units. The existing Organic visual system was preserved; desktop/mobile inspection, accessibility checks, responsive containment, and the exact visual baseline all pass.
+
+2026-09-29 — Phase 16 — COMPLETE
+Baseline: aeb7d7e584925b74a67cc674f0e03a3427bcee34
+Verification: `uv sync --all-groups`; `uv run pytest` (94 passed, including API validation/resource limits, collisions, bounded capacity, cancellation, failure/retry, immutable cache, and full simulation/replay cases); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (2 legacy/contract and 17 Vitest tests passed); `npm run build:web`; `npm run test:browser` (19 passed across desktop, mobile, and reduced-motion projects; 14 project-specific skips, including a real browser → API → worker-process simulation → replay workflow); `git diff --check` (all passed)
+Notes: Added a strict allowlisted experiment API with bounded request size, months, population, firms, pending work, worker processes, and replay bytes. FastAPI create/status/result/cancel endpoints expose structured validation and failure states; safe cancellation never kills a running artifact writer. Jobs use the installed Python model in a ProcessPoolExecutor, publish replay-v1 gzip artifacts atomically, and store restart-aware SQLite metadata keyed by model version plus the complete canonical configuration hash, so colliding requests share work and completed results are immutable. Laboratory mode provides bounded controls, polling progress, safe cancellation, retry, provenance, and canonical restoration; a failed or invalid custom result never replaces the published replay. The production-like browser gate starts both Vite and the Python service, and the inspected one-pixel mobile reflow from the fourth mode tab is recorded in the refreshed deterministic baseline.
