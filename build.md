@@ -234,16 +234,16 @@ Verification gate: standard quality suite plus a reduced CI batch exercising pai
 
 Acceptance: experiments report distributions across reproducible runs rather than relying on a single illustrative path.
 
-## [ ] Phase 12 — Production replay exporter
+## [x] Phase 12 — Production replay exporter
 
 References: `specs/14_metrics_and_outputs.md`, `specs/17_implementation_architecture.md`, `specs/22_interactive_web_experience.md`
 
-- [ ] Promote the replay schema to version `1` and document every field, unit, optional value, and compatibility rule.
-- [ ] Export aligned nominal/indexed canonical runs, aggregates, distributions, sector flows, typed events, and representative tracks.
-- [ ] Enforce reconciliation with authoritative analytical outputs and declared rounding tolerances.
-- [ ] Add payload-size controls, compression, schema migration/error behavior, and deterministic serialization.
-- [ ] Generate a canonical precomputed replay fixture used by the public experience.
-- [ ] Add contract tests shared between Python and TypeScript.
+- [x] Promote the replay schema to version `1` and document every field, unit, optional value, and compatibility rule.
+- [x] Export aligned nominal/indexed canonical runs, aggregates, distributions, sector flows, typed events, and representative tracks.
+- [x] Enforce reconciliation with authoritative analytical outputs and declared rounding tolerances.
+- [x] Add payload-size controls, compression, schema migration/error behavior, and deterministic serialization.
+- [x] Generate a canonical precomputed replay fixture used by the public experience.
+- [x] Add contract tests shared between Python and TypeScript.
 
 Verification gate: standard quality suites on both stacks, cross-language contract tests, deterministic export hashes, and reconciliation tests.
 
@@ -396,3 +396,8 @@ Notes: Added `run`, `shock-pair`, and `compare` workflows. A complete comparison
 Baseline: f3b2158095f6195092c432197ee24ed52fd5e083
 Verification: `uv sync --all-groups`; `uv run pytest` (86 passed, including reduced serial/parallel, paired/independent seed, resume, all-sensitivity-axis, aggregation, and CLI batch cases); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Added a validated `batch` workflow with a 10,000-run safety bound, spawn-based process parallelism, common-random-number paired seeds, and deterministic independent seed derivation. Alpha and the specified shock, lag, import-share, maturity, price-adjustment, policy-response, expected-inflation, consumption-propensity, and default-threshold axes form an explicit Cartesian grid. Stable task identities and atomic terminal records make interrupted batches resumable without rerunning completed work; raw complete, failed, and numerically invalid run records remain separate from regenerated JSON/Parquet summaries. Summaries report distributions, standard errors, 95% normal-approximation intervals, quantiles, failure reasons, and paired variant-minus-reference differences matched by seed group. The manifest distinguishes stylized mechanism experiments from empirical calibration and records omitted channels and sensitivity coverage; execution worker count does not affect scientific identity.
+
+2026-09-29 — Phase 12 — COMPLETE
+Baseline: e9da824ebad39679ceabe0ad3825f3a247618acb
+Verification: `uv sync --all-groups`; `uv run pytest` (90 passed, including replay-v1 pairing, reconciliation, size, compatibility, deterministic compression/hash, and canonical-fixture cases); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run python scripts/generate_replay_v1.py`; `npm test` (2 Python/TypeScript-facing contract suites passed); `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Promoted the browser boundary to a strict paired schema v1 while retaining v0 as the internal micro-accounting audit contract. The exporter aligns nominal/indexed timelines and common-random-number provenance, reconstructs month-end sector stocks from ledger postings, and carries recorded sector flows, typed economic events, stable matched representative households, chart aggregates, and all five required distributional dimensions. Exact whole-ISK aggregates, debt-service flows, and cohort totals reconcile at zero tolerance before serialization. Government and central-bank stock fields are explicitly null because those balance sheets are not modeled. Canonical key-sorted JSON, deterministic timestamp-free gzip, an uncompressed-size cap, explicit v0/future-version errors, a generated JSON Schema, and shared Python/browser validation protect the presentation contract. The checked 18-month canonical pair is 293,688 bytes uncompressed and 24,709 bytes compressed; its sidecar records the canonical SHA-256.

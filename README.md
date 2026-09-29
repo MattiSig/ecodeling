@@ -209,6 +209,25 @@ npm run test:browser
 The page is an internal vertical-slice audit tool, not the later public web component. It steps or
 scrubs the completed replay without recalculating any economic transition in JavaScript.
 
+## Production replay v1
+
+Phase 12 adds the paired production contract documented in
+[`docs/replay-v1.md`](docs/replay-v1.md). It aligns nominal and indexed endogenous-economy runs,
+reconstructs six-sector stocks from the ledger, exports recorded flows and typed events, retains
+actual representative-household tracks, and carries aggregate and five-dimension distributional
+series. Export uses zero-ISK reconciliation tolerance and fails on pairing drift, dangling flow
+provenance, or the default 2 MB uncompressed payload limit.
+
+The public experience's precomputed fixture is `web/replay/canonical-v1.json.gz`; its sidecar
+records sizes and the canonical JSON hash. Regenerate and verify the shared Python/browser contract
+with:
+
+```bash
+uv run python scripts/generate_replay_v1.py
+uv run pytest tests/unit/test_replay_v1.py tests/regression/test_replay_v1_fixture.py
+npm test
+```
+
 ## Endogenous firms, markets, and CPI
 
 Phase 06 adds a staged real-economy simulation in `ecodeling.economy`. Firms form adaptive demand

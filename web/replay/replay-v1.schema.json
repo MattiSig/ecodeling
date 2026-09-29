@@ -1,0 +1,905 @@
+{
+  "$defs": {
+    "AggregateSeriesV1": {
+      "additionalProperties": false,
+      "description": "A chart-ready aggregate series copied from authoritative monthly output.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "nominal_status": {
+          "enum": [
+            "nominal",
+            "price_index",
+            "rate",
+            "count",
+            "real"
+          ],
+          "title": "Nominal Status",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/SeriesPointV1"
+          },
+          "title": "Points",
+          "type": "array"
+        },
+        "regime": {
+          "enum": [
+            "nominal",
+            "indexed"
+          ],
+          "title": "Regime",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "ISK",
+            "index",
+            "basis_points",
+            "households",
+            "physical_units"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "regime",
+        "name",
+        "unit",
+        "nominal_status",
+        "points"
+      ],
+      "title": "AggregateSeriesV1",
+      "type": "object"
+    },
+    "Compatibility": {
+      "additionalProperties": false,
+      "description": "Reader-version range accepted for this bundle.",
+      "properties": {
+        "maximum_reader_schema": {
+          "const": 1,
+          "default": 1,
+          "title": "Maximum Reader Schema",
+          "type": "integer"
+        },
+        "minimum_reader_schema": {
+          "const": 1,
+          "default": 1,
+          "title": "Minimum Reader Schema",
+          "type": "integer"
+        }
+      },
+      "title": "Compatibility",
+      "type": "object"
+    },
+    "DistributionPointV1": {
+      "additionalProperties": false,
+      "description": "A policy-relevant cohort aggregate for one month.",
+      "properties": {
+        "cohort": {
+          "title": "Cohort",
+          "type": "string"
+        },
+        "consumption_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Consumption Isk",
+          "type": "integer"
+        },
+        "debt_service_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Debt Service Isk",
+          "type": "integer"
+        },
+        "defaults": {
+          "title": "Defaults",
+          "type": "integer"
+        },
+        "deposits_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Deposits Isk",
+          "type": "integer"
+        },
+        "dimension": {
+          "enum": [
+            "income_quintile",
+            "homeowner_status",
+            "mortgage_regime",
+            "initial_ltv_group",
+            "opening_liquidity_group"
+          ],
+          "title": "Dimension",
+          "type": "string"
+        },
+        "households": {
+          "title": "Households",
+          "type": "integer"
+        },
+        "income_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Income Isk",
+          "type": "integer"
+        },
+        "month": {
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "mortgage_principal_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Mortgage Principal Isk",
+          "type": "integer"
+        },
+        "mortgage_revaluation_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Mortgage Revaluation Isk",
+          "type": "integer"
+        },
+        "net_worth_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Net Worth Isk",
+          "type": "integer"
+        },
+        "regime": {
+          "enum": [
+            "nominal",
+            "indexed"
+          ],
+          "title": "Regime",
+          "type": "string"
+        }
+      },
+      "required": [
+        "regime",
+        "month",
+        "dimension",
+        "cohort",
+        "households",
+        "income_isk",
+        "consumption_isk",
+        "mortgage_principal_isk",
+        "debt_service_isk",
+        "mortgage_revaluation_isk",
+        "deposits_isk",
+        "net_worth_isk",
+        "defaults"
+      ],
+      "title": "DistributionPointV1",
+      "type": "object"
+    },
+    "ReplayEventV1": {
+      "additionalProperties": false,
+      "description": "Typed event copied from an authoritative simulation event or output.",
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Amount"
+        },
+        "event_type": {
+          "enum": [
+            "FX_SHOCK",
+            "FOREIGN_PRICE_SHOCK",
+            "CPI_REVALUATION",
+            "POLICY_RATE_CHANGE",
+            "RATE_RESET",
+            "ARREARS",
+            "DEFAULT"
+          ],
+          "title": "Event Type",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "month": {
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "regime": {
+          "enum": [
+            "nominal",
+            "indexed"
+          ],
+          "title": "Regime",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "enum": [
+                "ISK",
+                "basis_points",
+                "households"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "id",
+        "regime",
+        "month",
+        "event_type",
+        "amount",
+        "unit",
+        "source_id"
+      ],
+      "title": "ReplayEventV1",
+      "type": "object"
+    },
+    "ReplayManifestV1": {
+      "additionalProperties": false,
+      "description": "Bundle identity, provenance, compatibility, units, and publication limits.",
+      "properties": {
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "compatibility": {
+          "$ref": "#/$defs/Compatibility",
+          "default": {
+            "maximum_reader_schema": 1,
+            "minimum_reader_schema": 1
+          }
+        },
+        "git_commit": {
+          "minLength": 7,
+          "title": "Git Commit",
+          "type": "string"
+        },
+        "maximum_uncompressed_bytes": {
+          "exclusiveMinimum": 0,
+          "title": "Maximum Uncompressed Bytes",
+          "type": "integer"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "months": {
+          "items": {
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "type": "string"
+          },
+          "title": "Months",
+          "type": "array"
+        },
+        "parameter_sets": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "enum": [
+              "nominal",
+              "indexed"
+            ]
+          },
+          "title": "Parameter Sets",
+          "type": "object"
+        },
+        "representative_selection": {
+          "title": "Representative Selection",
+          "type": "string"
+        },
+        "rounding_tolerance_isk": {
+          "const": 0,
+          "default": 0,
+          "title": "Rounding Tolerance Isk",
+          "type": "integer"
+        },
+        "scenario_id": {
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "units": {
+          "$ref": "#/$defs/ReplayUnits",
+          "default": {
+            "missing": "null_means_unavailable",
+            "money": "nominal_whole_ISK",
+            "price_indices": "index_100000_at_base",
+            "rates": "basis_points",
+            "ratios": "basis_points",
+            "real_activity": "physical_units"
+          }
+        }
+      },
+      "required": [
+        "bundle_id",
+        "model_version",
+        "git_commit",
+        "scenario_id",
+        "seed",
+        "parameter_sets",
+        "months",
+        "maximum_uncompressed_bytes",
+        "representative_selection"
+      ],
+      "title": "ReplayManifestV1",
+      "type": "object"
+    },
+    "ReplayUnits": {
+      "additionalProperties": false,
+      "description": "Unit conventions applying to all tables unless a series overrides them.",
+      "properties": {
+        "missing": {
+          "const": "null_means_unavailable",
+          "default": "null_means_unavailable",
+          "title": "Missing",
+          "type": "string"
+        },
+        "money": {
+          "const": "nominal_whole_ISK",
+          "default": "nominal_whole_ISK",
+          "title": "Money",
+          "type": "string"
+        },
+        "price_indices": {
+          "const": "index_100000_at_base",
+          "default": "index_100000_at_base",
+          "title": "Price Indices",
+          "type": "string"
+        },
+        "rates": {
+          "const": "basis_points",
+          "default": "basis_points",
+          "title": "Rates",
+          "type": "string"
+        },
+        "ratios": {
+          "const": "basis_points",
+          "default": "basis_points",
+          "title": "Ratios",
+          "type": "string"
+        },
+        "real_activity": {
+          "const": "physical_units",
+          "default": "physical_units",
+          "title": "Real Activity",
+          "type": "string"
+        }
+      },
+      "title": "ReplayUnits",
+      "type": "object"
+    },
+    "RepresentativeAgentV1": {
+      "additionalProperties": false,
+      "description": "Stable simulated household followed without rewriting its history.",
+      "properties": {
+        "cohort": {
+          "title": "Cohort",
+          "type": "string"
+        },
+        "household_id": {
+          "title": "Household Id",
+          "type": "string"
+        },
+        "matched_household_id": {
+          "title": "Matched Household Id",
+          "type": "string"
+        },
+        "regime": {
+          "enum": [
+            "nominal",
+            "indexed"
+          ],
+          "title": "Regime",
+          "type": "string"
+        },
+        "track": {
+          "items": {
+            "$ref": "#/$defs/RepresentativePointV1"
+          },
+          "title": "Track",
+          "type": "array"
+        }
+      },
+      "required": [
+        "regime",
+        "household_id",
+        "cohort",
+        "matched_household_id",
+        "track"
+      ],
+      "title": "RepresentativeAgentV1",
+      "type": "object"
+    },
+    "RepresentativePointV1": {
+      "additionalProperties": false,
+      "description": "One actual household's recorded state for one month.",
+      "properties": {
+        "arrears_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Arrears Isk",
+          "type": "integer"
+        },
+        "consumption_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Consumption Isk",
+          "type": "integer"
+        },
+        "defaulted": {
+          "title": "Defaulted",
+          "type": "boolean"
+        },
+        "deposits_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Deposits Isk",
+          "type": "integer"
+        },
+        "month": {
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "mortgage_payment_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Mortgage Payment Isk",
+          "type": "integer"
+        },
+        "mortgage_principal_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Mortgage Principal Isk",
+          "type": "integer"
+        },
+        "mortgage_revaluation_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Mortgage Revaluation Isk",
+          "type": "integer"
+        },
+        "wage_income_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Wage Income Isk",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "month",
+        "wage_income_isk",
+        "consumption_isk",
+        "deposits_isk",
+        "mortgage_principal_isk",
+        "mortgage_payment_isk",
+        "mortgage_revaluation_isk",
+        "arrears_isk",
+        "defaulted"
+      ],
+      "title": "RepresentativePointV1",
+      "type": "object"
+    },
+    "RunIdentityV1": {
+      "additionalProperties": false,
+      "description": "Identity of one regime run included in the paired bundle.",
+      "properties": {
+        "configuration_hash": {
+          "title": "Configuration Hash",
+          "type": "string"
+        },
+        "regime": {
+          "enum": [
+            "nominal",
+            "indexed"
+          ],
+          "title": "Regime",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "scenario_id": {
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "regime",
+        "run_id",
+        "scenario_id",
+        "seed",
+        "configuration_hash"
+      ],
+      "title": "RunIdentityV1",
+      "type": "object"
+    },
+    "ScenarioPairingV1": {
+      "additionalProperties": false,
+      "description": "Declared common-random-number relationship between the two runs.",
+      "properties": {
+        "indexed_run_id": {
+          "title": "Indexed Run Id",
+          "type": "string"
+        },
+        "matching": {
+          "const": "stable_household_id",
+          "default": "stable_household_id",
+          "title": "Matching",
+          "type": "string"
+        },
+        "nominal_run_id": {
+          "title": "Nominal Run Id",
+          "type": "string"
+        },
+        "shared_initialization": {
+          "const": true,
+          "default": true,
+          "title": "Shared Initialization",
+          "type": "boolean"
+        },
+        "shared_random_streams": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Shared Random Streams",
+          "type": "array"
+        },
+        "shared_seed": {
+          "title": "Shared Seed",
+          "type": "integer"
+        },
+        "shared_shock_path": {
+          "const": true,
+          "default": true,
+          "title": "Shared Shock Path",
+          "type": "boolean"
+        },
+        "structural_difference": {
+          "const": "mortgage_indexation_topology",
+          "default": "mortgage_indexation_topology",
+          "title": "Structural Difference",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nominal_run_id",
+        "indexed_run_id",
+        "shared_seed",
+        "shared_random_streams"
+      ],
+      "title": "ScenarioPairingV1",
+      "type": "object"
+    },
+    "SectorFlowV1": {
+      "additionalProperties": false,
+      "description": "A recorded monthly sector-to-sector flow with ledger provenance.",
+      "properties": {
+        "amount_isk": {
+          "description": "Exact nominal whole Icelandic kronur",
+          "title": "Amount Isk",
+          "type": "integer"
+        },
+        "flow_type": {
+          "enum": [
+            "wages",
+            "consumption",
+            "imports",
+            "interest",
+            "principal_payment",
+            "bank_dividend"
+          ],
+          "title": "Flow Type",
+          "type": "string"
+        },
+        "ledger_entry_id": {
+          "title": "Ledger Entry Id",
+          "type": "string"
+        },
+        "month": {
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "regime": {
+          "enum": [
+            "nominal",
+            "indexed"
+          ],
+          "title": "Regime",
+          "type": "string"
+        },
+        "source_sector": {
+          "title": "Source Sector",
+          "type": "string"
+        },
+        "target_sector": {
+          "title": "Target Sector",
+          "type": "string"
+        }
+      },
+      "required": [
+        "regime",
+        "month",
+        "flow_type",
+        "source_sector",
+        "target_sector",
+        "amount_isk",
+        "ledger_entry_id"
+      ],
+      "title": "SectorFlowV1",
+      "type": "object"
+    },
+    "SectorSnapshotV1": {
+      "additionalProperties": false,
+      "description": "Recorded month-end sector stocks; null means the sector/stock is unavailable.",
+      "properties": {
+        "equity_isk": {
+          "anyOf": [
+            {
+              "description": "Exact nominal whole Icelandic kronur",
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Equity Isk"
+        },
+        "financial_assets_isk": {
+          "anyOf": [
+            {
+              "description": "Exact nominal whole Icelandic kronur",
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Financial Assets Isk"
+        },
+        "inventory_units": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Inventory Units"
+        },
+        "liabilities_isk": {
+          "anyOf": [
+            {
+              "description": "Exact nominal whole Icelandic kronur",
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Liabilities Isk"
+        },
+        "month": {
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "real_assets_isk": {
+          "anyOf": [
+            {
+              "description": "Exact nominal whole Icelandic kronur",
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Real Assets Isk"
+        },
+        "regime": {
+          "enum": [
+            "nominal",
+            "indexed"
+          ],
+          "title": "Regime",
+          "type": "string"
+        },
+        "sector": {
+          "enum": [
+            "households",
+            "firms",
+            "banks",
+            "government",
+            "central_bank",
+            "foreign"
+          ],
+          "title": "Sector",
+          "type": "string"
+        }
+      },
+      "required": [
+        "regime",
+        "month",
+        "sector",
+        "financial_assets_isk",
+        "real_assets_isk",
+        "liabilities_isk",
+        "equity_isk",
+        "inventory_units"
+      ],
+      "title": "SectorSnapshotV1",
+      "type": "object"
+    },
+    "SeriesPointV1": {
+      "additionalProperties": false,
+      "description": "One aligned chart observation; null is an explicit unavailable value.",
+      "properties": {
+        "month": {
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "month",
+        "value"
+      ],
+      "title": "SeriesPointV1",
+      "type": "object"
+    },
+    "TimelinePointV1": {
+      "additionalProperties": false,
+      "description": "One aligned monthly index and its optional narrative markers.",
+      "properties": {
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "month": {
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "policy_decision": {
+          "title": "Policy Decision",
+          "type": "boolean"
+        },
+        "shock": {
+          "title": "Shock",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "index",
+        "month",
+        "shock",
+        "policy_decision"
+      ],
+      "title": "TimelinePointV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Complete immutable production replay contract.",
+  "properties": {
+    "aggregate_series": {
+      "items": {
+        "$ref": "#/$defs/AggregateSeriesV1"
+      },
+      "title": "Aggregate Series",
+      "type": "array"
+    },
+    "distribution_series": {
+      "items": {
+        "$ref": "#/$defs/DistributionPointV1"
+      },
+      "title": "Distribution Series",
+      "type": "array"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/ReplayEventV1"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "manifest": {
+      "$ref": "#/$defs/ReplayManifestV1"
+    },
+    "representative_agents": {
+      "items": {
+        "$ref": "#/$defs/RepresentativeAgentV1"
+      },
+      "title": "Representative Agents",
+      "type": "array"
+    },
+    "runs": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/RunIdentityV1"
+        },
+        {
+          "$ref": "#/$defs/RunIdentityV1"
+        }
+      ],
+      "title": "Runs",
+      "type": "array"
+    },
+    "scenario_pairing": {
+      "$ref": "#/$defs/ScenarioPairingV1"
+    },
+    "sector_flows": {
+      "items": {
+        "$ref": "#/$defs/SectorFlowV1"
+      },
+      "title": "Sector Flows",
+      "type": "array"
+    },
+    "sector_snapshots": {
+      "items": {
+        "$ref": "#/$defs/SectorSnapshotV1"
+      },
+      "title": "Sector Snapshots",
+      "type": "array"
+    },
+    "timeline": {
+      "items": {
+        "$ref": "#/$defs/TimelinePointV1"
+      },
+      "title": "Timeline",
+      "type": "array"
+    }
+  },
+  "required": [
+    "manifest",
+    "timeline",
+    "runs",
+    "sector_snapshots",
+    "sector_flows",
+    "events",
+    "representative_agents",
+    "aggregate_series",
+    "distribution_series",
+    "scenario_pairing"
+  ],
+  "title": "ReplayBundleV1",
+  "type": "object"
+}

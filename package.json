@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test web/internal-audit/tests/*.test.mjs",
+    "test": "node --test web/internal-audit/tests/*.test.mjs web/replay/tests/*.test.ts",
     "test:browser": "playwright test --config web/internal-audit/playwright.config.mjs"
   },
   "devDependencies": {
