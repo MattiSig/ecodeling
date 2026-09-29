@@ -3,8 +3,9 @@
 from dataclasses import dataclass
 
 from ecodeling.accounting import ISK, Ledger
+from ecodeling.config.schema import ShockKind, ShockPersistence
 from ecodeling.economy.entities import Firm, WorkerHousehold
-from ecodeling.identifiers import AgentId, RunId, ScenarioId
+from ecodeling.identifiers import AgentId, LedgerEntryId, RunId, ScenarioId
 from ecodeling.model.clock import YearMonth
 
 
@@ -40,6 +41,11 @@ class FirmMonthlyOutput:
     sales: int
     closing_inventory: int
     price_isk: ISK
+    import_share_bps: int
+    import_price_index: int
+    imported_input_cost_per_unit: ISK
+    imported_input_expenditure: ISK
+    total_unit_cost: ISK
     revenue: ISK
     cash_profit: ISK
     closing_deposits: ISK
@@ -60,9 +66,31 @@ class EconomyMonthlyOutput:
     wage_income: ISK
     household_consumption: ISK
     firm_revenue: ISK
+    exchange_rate_index: int
+    foreign_price_index: int
+    import_price_index: int
+    imported_input_expenditure: ISK
+    import_ledger_entry_id: LedgerEntryId | None
     cpi_level: int
     monthly_inflation_bps: int
     annual_inflation_bps: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class ForeignShockEvent:
+    """Traceable activation of an exogenous FX or foreign-price shock."""
+
+    event_id: str
+    month: YearMonth
+    kind: ShockKind
+    persistence: ShockPersistence
+    magnitude_bps: int
+    exchange_rate_before: int
+    exchange_rate_after: int
+    foreign_price_before: int
+    foreign_price_after: int
+    import_price_before: int
+    import_price_after: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,4 +106,5 @@ class EconomySimulationResult:
     household_months: tuple[HouseholdEconomyMonthlyOutput, ...]
     firm_months: tuple[FirmMonthlyOutput, ...]
     aggregate_months: tuple[EconomyMonthlyOutput, ...]
+    shock_events: tuple[ForeignShockEvent, ...]
     ledger: Ledger

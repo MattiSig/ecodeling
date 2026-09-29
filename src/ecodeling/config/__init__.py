@@ -1,5 +1,21 @@
 """Validated external configuration for Ecodeling runs."""
 
-from ecodeling.config.schema import MicroSimulationConfig, ModelConfig, RealEconomyConfig
+from ecodeling.config.schema import (
+    ForeignSectorConfig,
+    MicroSimulationConfig,
+    ModelConfig,
+    RealEconomyConfig,
+    ShockConfig,
+    ShockKind,
+    ShockPersistence,
+)
 
-__all__ = ["MicroSimulationConfig", "ModelConfig", "RealEconomyConfig"]
+__all__ = [
+    "ForeignSectorConfig",
+    "MicroSimulationConfig",
+    "ModelConfig",
+    "RealEconomyConfig",
+    "ShockConfig",
+    "ShockKind",
+    "ShockPersistence",
+]

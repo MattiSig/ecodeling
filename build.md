@@ -161,15 +161,15 @@ Verification gate: standard quality suite plus a seeded no-shock run meeting dec
 
 Acceptance: the economy generates production, employment, consumption, prices, and CPI endogenously while preserving accounting identities.
 
-## [ ] Phase 07 — Foreign sector and import-cost shock
+## [x] Phase 07 — Foreign sector and import-cost shock
 
 References: `specs/11_prices_cpi_and_fx.md`, `specs/13_shocks_and_scenarios.md`
 
-- [ ] Implement the stylized foreign sector, exchange-rate/import-price path, and imported firm inputs.
-- [ ] Implement configured one-off and persistent foreign-price or exchange-rate shocks.
-- [ ] Propagate import costs into firm costs and pricing without activating mortgage indexation feedback yet.
-- [ ] Record shock events and affected sector flows for analysis and replay.
-- [ ] Add no-shock equivalence, shock-timing, sign, magnitude, and reproducibility tests.
+- [x] Implement the stylized foreign sector, exchange-rate/import-price path, and imported firm inputs.
+- [x] Implement configured one-off and persistent foreign-price or exchange-rate shocks.
+- [x] Propagate import costs into firm costs and pricing without activating mortgage indexation feedback yet.
+- [x] Record shock events and affected sector flows for analysis and replay.
+- [x] Add no-shock equivalence, shock-timing, sign, magnitude, and reproducibility tests.
 
 Verification gate: standard quality suite plus an impulse-response fixture showing the configured depreciation raises import costs and produces an interpretable CPI response.
 
@@ -371,3 +371,8 @@ Notes: Added strict replay schema v0 and canonical JSON export as a presentation
 Baseline: 715d07f351e6e359a594f137fb11a779bae3e58e
 Verification: `uv sync --all-groups`; `uv run pytest` (62 passed, including generated conservation paths, the 120-month no-shock calibration, and the existing 600-month accounting run); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; default 1,000-household/600-month endogenous no-shock stress run; `npm ci`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Added a separate staged real-economy engine so Phase 04's external-path comparison and replay remain stable. Firms form adaptive sales expectations, match labor from a named stream, settle wages and household purchases through mirrored bank-deposit claims, produce within labor/capacity bounds, carry physical inventories, and partially adjust cost-plus prices without reading CPI. Goods search uses its own named stream and plans against an inventory snapshot before committing state. CPI is an exact sales-weighted firm-price index normalized to 100,000, with monthly and twelve-month rates; the declared baseline fixes wages and uses zero markup to isolate matching/accounting stability before foreign inputs and feedback channels. Adding result-affecting real-economy configuration intentionally changed canonical configuration hashes, so the replay-v0 fixture was regenerated; its analytical values still reconcile unchanged.
+
+2026-09-29 — Phase 07 — COMPLETE
+Baseline: 035730525537377a8e994cf44b0cfd19df49d08a
+Verification: `uv sync --all-groups`; `uv run pytest` (72 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/integration/test_foreign_impulse.py tests/unit/test_foreign_sector.py` (7 passed); `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Added integer-indexed exogenous FX and foreign-price paths, configurable one-month or permanent shocks, and imported firm inputs whose baseline share is derived relative to labor unit cost. Import bills settle to a foreign-sector deposit through mirrored bank claims; monthly aggregate flows retain their ledger entry IDs, and typed onset events record the before/after causal step. Current-month foreign prices are observed before production/import settlement/pricing, while CPI remains derived from actual goods transactions and is not yet fed into mortgages. Decimal shock magnitudes are converted once to basis points with half-up rounding; all downstream indices and ISK flows use integer arithmetic. The default zero import share preserves Phase 06 behavior, while a fixed 10% depreciation fixture verifies the traceable import-cost and CPI impulse. Result-affecting configuration changed the canonical hash, so replay v0 was regenerated and reconciled without changing its analytical series.

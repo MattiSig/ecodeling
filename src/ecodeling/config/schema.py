@@ -84,6 +84,14 @@ class RealEconomyConfig(FrozenConfigModel):
         return self
 
 
+class ForeignSectorConfig(FrozenConfigModel):
+    """Exogenous foreign prices, exchange rates, and imported-input exposure."""
+
+    baseline_exchange_rate_index: Annotated[int, Field(ge=1)] = 100_000
+    baseline_foreign_price_index: Annotated[int, Field(ge=1)] = 100_000
+    import_share_bps: Annotated[int, Field(ge=0, lt=10_000)] = 0
+
+
 class MonetaryPolicyConfig(FrozenConfigModel):
     """Parameters for the later inflation-response policy rule."""
 
@@ -106,6 +114,14 @@ class ShockKind(StrEnum):
 
     NONE = "none"
     FX_DEPRECIATION = "fx_depreciation"
+    FOREIGN_PRICE_INCREASE = "foreign_price_increase"
+
+
+class ShockPersistence(StrEnum):
+    """Supported transparent paths after an exogenous shock starts."""
+
+    ONE_OFF = "one_off"
+    PERMANENT = "permanent"
 
 
 class ShockConfig(FrozenConfigModel):
@@ -113,7 +129,8 @@ class ShockConfig(FrozenConfigModel):
 
     kind: ShockKind = ShockKind.NONE
     month: Annotated[int, Field(ge=0)] | None = None
-    magnitude: Annotated[float, Field(allow_inf_nan=False)] = 0.0
+    magnitude: Annotated[float, Field(gt=-1.0, allow_inf_nan=False)] = 0.0
+    persistence: ShockPersistence = ShockPersistence.PERMANENT
 
     @field_validator("month")
     @classmethod
@@ -143,6 +160,7 @@ class ModelConfig(FrozenConfigModel):
     indexation: IndexationConfig = Field(default_factory=IndexationConfig)
     micro: MicroSimulationConfig = Field(default_factory=MicroSimulationConfig)
     real_economy: RealEconomyConfig = Field(default_factory=RealEconomyConfig)
+    foreign_sector: ForeignSectorConfig = Field(default_factory=ForeignSectorConfig)
     monetary_policy: MonetaryPolicyConfig = Field(default_factory=MonetaryPolicyConfig)
     shock: ShockConfig = Field(default_factory=ShockConfig)
 

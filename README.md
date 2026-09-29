@@ -179,3 +179,42 @@ from ecodeling.identifiers import ScenarioId
 result = run_economy_simulation(ModelConfig(scenario_id=ScenarioId("no-shock")))
 print(result.aggregate_months[-1].cpi_level)
 ```
+
+## Foreign sector and import-cost shocks
+
+Phase 07 adds exogenous exchange-rate and foreign-price indices plus imported production inputs.
+The exchange rate is defined as ISK per unit of foreign currency, so a higher value is a domestic
+currency depreciation. The import-price index is their product, normalized to 100,000. A firm's
+configured import share determines its baseline imported cost per produced unit; a zero share has
+no direct cost or price response.
+
+Each month observes the configured foreign path before production and pricing. Firms then buy the
+inputs used in current production and settle the bill to the foreign sector through mirrored bank
+deposit claims. Firm price targets include the observed import cost and adjust only by the declared
+partial-adjustment rule. CPI remains the sales-weighted index of actual consumer transactions, and
+this phase does not feed CPI into mortgages.
+
+Shocks may target FX or foreign prices and may be a one-month impulse or a permanent level shift.
+Their decimal configuration magnitude is converted once to integer basis points using half-up
+rounding; thereafter the authoritative indices and ISK flows use integer arithmetic. Results expose
+the FX, foreign-price, and import-price paths, firm and aggregate import expenditures, the matching
+ledger entries, and a typed shock-onset event.
+
+```python
+from ecodeling.config.schema import (
+    ForeignSectorConfig,
+    ModelConfig,
+    ShockConfig,
+    ShockKind,
+)
+from ecodeling.economy import run_economy_simulation
+from ecodeling.identifiers import ScenarioId
+
+config = ModelConfig(
+    scenario_id=ScenarioId("fx-depreciation"),
+    foreign_sector=ForeignSectorConfig(import_share_bps=2_500),
+    shock=ShockConfig(kind=ShockKind.FX_DEPRECIATION, month=12, magnitude=0.10),
+)
+result = run_economy_simulation(config)
+print(result.shock_events[0])
+```

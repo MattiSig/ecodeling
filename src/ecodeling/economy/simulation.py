@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 from collections import defaultdict
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 
 import numpy as np
 
@@ -22,12 +23,13 @@ from ecodeling.accounting import (
     Sector,
     TransactionEntry,
 )
-from ecodeling.config.schema import ModelConfig
+from ecodeling.config.schema import ModelConfig, ShockKind, ShockPersistence
 from ecodeling.economy.entities import Firm, WorkerHousehold
 from ecodeling.economy.outputs import (
     EconomyMonthlyOutput,
     EconomySimulationResult,
     FirmMonthlyOutput,
+    ForeignShockEvent,
     HouseholdEconomyMonthlyOutput,
 )
 from ecodeling.identifiers import AccountId, AgentId, ContractId, LedgerEntryId, RunId
@@ -71,6 +73,42 @@ def _ceil_ratio(numerator: int, denominator: int) -> int:
     return (numerator + denominator - 1) // denominator
 
 
+def _shock_magnitude_bps(config: ModelConfig) -> int:
+    return int(
+        (Decimal(str(config.shock.magnitude)) * Decimal(_BPS)).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        )
+    )
+
+
+def _baseline_import_cost(labor_unit_cost: ISK, import_share_bps: int) -> ISK:
+    if import_share_bps == 0:
+        return 0
+    return _round_ratio(labor_unit_cost * import_share_bps, _BPS - import_share_bps)
+
+
+def _foreign_path(config: ModelConfig, offset: int) -> tuple[int, int, int]:
+    foreign = config.foreign_sector
+    exchange_rate = foreign.baseline_exchange_rate_index
+    foreign_price = foreign.baseline_foreign_price_index
+    shock = config.shock
+    shock_active = shock.month is not None and (
+        offset == shock.month
+        or (offset > shock.month and shock.persistence is ShockPersistence.PERMANENT)
+    )
+    if shock_active:
+        factor_bps = _BPS + _shock_magnitude_bps(config)
+        if shock.kind is ShockKind.FX_DEPRECIATION:
+            exchange_rate = _round_ratio(exchange_rate * factor_bps, _BPS)
+        elif shock.kind is ShockKind.FOREIGN_PRICE_INCREASE:
+            foreign_price = _round_ratio(foreign_price * factor_bps, _BPS)
+    import_price = _round_ratio(
+        exchange_rate * foreign_price,
+        _PRICE_BASE,
+    )
+    return exchange_rate, foreign_price, import_price
+
+
 def _deposit_asset(agent_id: AgentId) -> AccountId:
     return AccountId(f"{agent_id}:deposit")
 
@@ -100,11 +138,19 @@ def _create_agents(config: ModelConfig) -> tuple[tuple[WorkerHousehold, ...], tu
         )
         for index in range(config.micro.households)
     )
+    labor_unit_cost = _round_ratio(
+        economy.monthly_wage_isk,
+        economy.productivity_units_per_worker,
+    )
+    import_unit_cost = _baseline_import_cost(
+        labor_unit_cost,
+        config.foreign_sector.import_share_bps,
+    )
     cost_plus_price = max(
         1,
         _round_ratio(
-            economy.monthly_wage_isk * (_BPS + economy.markup_bps),
-            economy.productivity_units_per_worker * _BPS,
+            (labor_unit_cost + import_unit_cost) * (_BPS + economy.markup_bps),
+            _BPS,
         ),
     )
     opening_price = economy.opening_price_isk or cost_plus_price
@@ -117,6 +163,7 @@ def _create_agents(config: ModelConfig) -> tuple[tuple[WorkerHousehold, ...], tu
             opening_wage=economy.monthly_wage_isk,
             opening_price=opening_price,
             markup_bps=economy.markup_bps,
+            import_share_bps=config.foreign_sector.import_share_bps,
             opening_deposits=monthly_payroll * economy.firm_cash_buffer_months,
         )
         for index in range(economy.firms)
@@ -169,6 +216,27 @@ def _register_and_open(
             "External-sector equity",
             AccountKind.EQUITY,
             allow_negative=True,
+        )
+    )
+    foreign_deposit_claim = ContractId("economy:deposit:foreign-sector")
+    ledger.register_account(
+        Account(
+            _deposit_asset(_EXTERNAL_ID),
+            _EXTERNAL_ID,
+            Sector.FOREIGN,
+            "Foreign-sector deposit",
+            AccountKind.FINANCIAL_ASSET,
+            foreign_deposit_claim,
+        )
+    )
+    ledger.register_account(
+        Account(
+            _deposit_liability(_EXTERNAL_ID),
+            _BANK_ID,
+            Sector.BANKS,
+            "Foreign-sector deposit liability",
+            AccountKind.LIABILITY,
+            foreign_deposit_claim,
         )
     )
     postings: list[Posting] = []
@@ -256,7 +324,7 @@ def _transfer_entry(
 
 
 def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
-    """Run the endogenous no-foreign-shock real economy in explicit monthly stages."""
+    """Run staged domestic markets with exogenous foreign prices and FX."""
     households, firms = _create_agents(config)
     economy = config.real_economy
     ledger = Ledger()
@@ -284,10 +352,36 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
     household_outputs: list[HouseholdEconomyMonthlyOutput] = []
     firm_outputs: list[FirmMonthlyOutput] = []
     aggregate_outputs: list[EconomyMonthlyOutput] = []
+    shock_events: list[ForeignShockEvent] = []
     base_price_sum = sum(firm.opening_price for firm in firms)
+    baseline_import_price = _round_ratio(
+        config.foreign_sector.baseline_exchange_rate_index
+        * config.foreign_sector.baseline_foreign_price_index,
+        _PRICE_BASE,
+    )
 
     for offset in range(config.simulation.months):
         month = config.simulation.start_month.add_months(offset)
+
+        # 0. Observe the current exogenous FX/foreign-price path before plans are made.
+        exchange_rate, foreign_price, import_price = _foreign_path(config, offset)
+        if config.shock.month == offset and config.shock.kind is not ShockKind.NONE:
+            before_exchange, before_foreign, before_import = _foreign_path(config, offset - 1)
+            shock_events.append(
+                ForeignShockEvent(
+                    event_id=f"foreign-shock:{month}",
+                    month=month,
+                    kind=config.shock.kind,
+                    persistence=config.shock.persistence,
+                    magnitude_bps=_shock_magnitude_bps(config),
+                    exchange_rate_before=before_exchange,
+                    exchange_rate_after=exchange_rate,
+                    foreign_price_before=before_foreign,
+                    foreign_price_after=foreign_price,
+                    import_price_before=before_import,
+                    import_price_after=import_price,
+                )
+            )
 
         # 1. Firms form production and labor plans from prior sales expectations/inventory.
         desired_production: dict[AgentId, int] = {}
@@ -373,17 +467,52 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
             production[firm.id] = produced
             state.inventory += produced
 
-        # 5. Prices respond to unit labor cost and markup, never directly to CPI.
+        # 5. Imported inputs settle with the foreign sector at the observed import price.
+        imported_unit_costs: dict[AgentId, int] = {}
+        import_expenditures: dict[AgentId, int] = {}
+        import_transfers: list[tuple[AgentId, AgentId, ISK]] = []
+        for firm in firms:
+            labor_unit_cost = _round_ratio(
+                firm_states[firm.id].wage,
+                firm.productivity_units_per_worker,
+            )
+            baseline_cost = _baseline_import_cost(labor_unit_cost, firm.import_share_bps)
+            imported_unit_cost = _round_ratio(
+                baseline_cost * import_price,
+                baseline_import_price,
+            )
+            expenditure = production[firm.id] * imported_unit_cost
+            if expenditure > firm_states[firm.id].deposits:
+                raise RuntimeError(f"firm import bill exceeds deposits: {firm.id}")
+            imported_unit_costs[firm.id] = imported_unit_cost
+            import_expenditures[firm.id] = expenditure
+            if expenditure:
+                firm_states[firm.id].deposits -= expenditure
+                import_transfers.append((firm.id, _EXTERNAL_ID, expenditure))
+        import_entry = _transfer_entry(
+            LedgerEntryId(f"economy:{month}:imports"),
+            month,
+            "Imported production-input settlement",
+            tuple(import_transfers),
+        )
+        if import_entry is not None:
+            ledger.post(import_entry)
+        import_entry_id = import_entry.id if import_entry is not None else None
+
+        # 6. Prices respond to labor and import costs plus markup, never directly to CPI.
         prices: dict[AgentId, int] = {}
+        total_unit_costs: dict[AgentId, int] = {}
         for firm in firms:
             state = firm_states[firm.id]
             unit_cost = _round_ratio(state.wage, firm.productivity_units_per_worker)
+            unit_cost += imported_unit_costs[firm.id]
+            total_unit_costs[firm.id] = unit_cost
             target = max(1, _round_ratio(unit_cost * (_BPS + firm.markup_bps), _BPS))
             adjustment = _round_ratio((target - state.price) * economy.price_adjustment_bps, _BPS)
             state.price = max(1, state.price + adjustment)
             prices[firm.id] = state.price
 
-        # 6. Randomized search plans purchases against a provisional inventory snapshot.
+        # 7. Randomized search plans purchases against a provisional inventory snapshot.
         # Firm state is mutated only after the complete allocation plan exists.
         budgets = {
             household.id: min(
@@ -442,7 +571,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         if goods_entry is not None:
             ledger.post(goods_entry)
 
-        # 7. Complete expectations and derive CPI only from transacted firm prices.
+        # 8. Complete expectations and derive CPI only from transacted firm prices.
         for firm in firms:
             state = firm_states[firm.id]
             state.expected_demand += _round_ratio(
@@ -500,8 +629,13 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                     firm_sales[firm.id],
                     firm_state.inventory,
                     firm_state.price,
+                    firm.import_share_bps,
+                    import_price,
+                    imported_unit_costs[firm.id],
+                    import_expenditures[firm.id],
+                    total_unit_costs[firm.id],
                     revenues[firm.id],
-                    revenues[firm.id] - wage_bills[firm.id],
+                    revenues[firm.id] - wage_bills[firm.id] - import_expenditures[firm.id],
                     firm_state.deposits,
                     firm_state.expected_demand,
                 )
@@ -522,6 +656,11 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 sum(wages.values()),
                 sum(expenditures.values()),
                 sum(revenues.values()),
+                exchange_rate,
+                foreign_price,
+                import_price,
+                sum(import_expenditures.values()),
+                import_entry_id,
                 cpi,
                 monthly_inflation,
                 annual_inflation,
@@ -547,5 +686,6 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         tuple(household_outputs),
         tuple(firm_outputs),
         tuple(aggregate_outputs),
+        tuple(shock_events),
         ledger,
     )

@@ -5,7 +5,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from ecodeling.config.schema import ModelConfig, ShockKind
+from ecodeling.config.schema import ModelConfig, ShockKind, ShockPersistence
 from ecodeling.identifiers import ScenarioId
 
 
@@ -34,6 +34,11 @@ def test_default_configuration_is_frozen_and_complete() -> None:
         ({"micro": {"mortgage_share": 0.9, "homeowner_share": 0.2}}, "micro"),
         ({"monetary_policy": {"smoothing": 1.01}}, "monetary_policy.smoothing"),
         ({"shock": {"kind": "fx_depreciation", "magnitude": 0.1}}, "shock.month"),
+        (
+            {"shock": {"kind": "fx_depreciation", "month": 3, "magnitude": -1.0}},
+            "shock.magnitude",
+        ),
+        ({"foreign_sector": {"import_share_bps": 10_000}}, "foreign_sector.import_share_bps"),
         ({"unknown": True}, "unknown"),
     ],
 )
@@ -85,5 +90,16 @@ def test_default_configuration_has_stable_canonical_identity() -> None:
     config = ModelConfig(scenario_id=ScenarioId("baseline"))
 
     assert config.configuration_hash() == (
-        "8bfeb048371c6fd8474549d97f70ff8a3e1e113f2e0db9dfe60297ede4bd92e1"
+        "fa57038d01083a519706a28279cc3f5e5039d4a0149a754429d7528a5ec44214"
     )
+
+
+def test_active_shock_defaults_to_a_permanent_level_shift() -> None:
+    config = ModelConfig.model_validate(
+        {
+            "scenario_id": "persistent-shock",
+            "shock": {"kind": "fx_depreciation", "month": 12, "magnitude": 0.1},
+        }
+    )
+
+    assert config.shock.persistence is ShockPersistence.PERMANENT

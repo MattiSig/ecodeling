@@ -24,4 +24,5 @@ class Firm:
     opening_wage: ISK
     opening_price: ISK
     markup_bps: int
+    import_share_bps: int
     opening_deposits: ISK
