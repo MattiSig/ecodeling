@@ -1,5 +1,3 @@
-import "@fontsource-variable/fraunces";
-
 import { scaleLinear, scaleSqrt } from "d3";
 import { LitElement, css, html, nothing, svg, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -839,7 +837,7 @@ export class EcodelingExperience extends LitElement {
               markerUnits="userSpaceOnUse"
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#c66b3d"></path>
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#d8a955"></path>
             </marker>
           </defs>
           ${flows.map((flow) => {
@@ -857,7 +855,7 @@ export class EcodelingExperience extends LitElement {
                 y1=${y1}
                 x2=${x2}
                 y2=${y2}
-                style=${`stroke:#c66b3d;stroke-width:${width(flow.amount_isk)}px;opacity:.58`}
+                style=${`stroke:#d8a955;stroke-width:${width(flow.amount_isk)}px;opacity:.72`}
                 marker-end="url(#arrow)"
                 ><title>${label}</title></line
               >
@@ -1490,21 +1488,30 @@ export class EcodelingExperience extends LitElement {
 
   static override styles = css`
     :host {
-      --sand: #e8dcc7;
-      --oat: #d4b895;
-      --sage: #8b9d83;
-      --clay: #b08b6e;
-      --terracotta: #c66b3d;
-      --ochre: #c08e3a;
-      --moss: #606c38;
+      --ec-bg: var(--bg, #121316);
+      --ec-fg: var(--fg, #e7e5df);
+      --ec-muted: var(--muted, #8e9199);
+      --ec-rule: var(--rule, #2b2e34);
+      --ec-signal: var(--accent, #d8a955);
+      --ec-panel: color-mix(in srgb, var(--ec-fg) 5%, var(--ec-bg));
+      --ec-panel-strong: color-mix(in srgb, var(--ec-fg) 9%, var(--ec-bg));
+      --sand: var(--ec-bg);
+      --oat: var(--ec-panel-strong);
+      --sage: var(--ec-panel);
+      --clay: var(--ec-panel-strong);
+      --terracotta: var(--ec-signal);
+      --ochre: var(--ec-signal);
+      --moss: var(--ec-fg);
+      --moss-dark: var(--ec-fg);
+      --ink: var(--ec-fg);
       display: block;
-      color: var(--moss);
-      font-family: "Fraunces Variable", Fraunces, serif;
-      font-variation-settings:
-        "SOFT" 32,
-        "WONK" 0;
+      color: var(--ec-fg);
+      font-family:
+        "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+        monospace;
+      font-variant-numeric: tabular-nums;
       container-type: inline-size;
-      outline-color: var(--terracotta);
+      outline-color: var(--ec-signal);
     }
     *,
     *::before,
@@ -1532,18 +1539,12 @@ export class EcodelingExperience extends LitElement {
       overflow: hidden;
       min-height: 38rem;
       padding: clamp(1rem, 3.5cqi, 3.5rem);
-      border-radius: clamp(1rem, 3cqi, 2rem);
-      background: var(--sand);
+      border-radius: 0;
+      background: var(--ec-bg);
       isolation: isolate;
     }
     .frame::before {
-      position: absolute;
-      z-index: -1;
-      inset: 0;
-      opacity: 0.025;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      content: "";
-      pointer-events: none;
+      display: none;
     }
     .masthead {
       display: grid;
@@ -1559,12 +1560,12 @@ export class EcodelingExperience extends LitElement {
       margin-top: 0;
     }
     h1 {
-      max-width: 18ch;
+      max-width: 30ch;
       margin-bottom: 0;
-      font-size: clamp(2.6rem, 7cqi, 6.5rem);
-      font-weight: 670;
-      letter-spacing: -0.055em;
-      line-height: 0.88;
+      font-size: clamp(1.5rem, 3.5cqi, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
     }
     h2 {
       margin-bottom: 0.5rem;
@@ -1587,7 +1588,7 @@ export class EcodelingExperience extends LitElement {
       max-width: 27rem;
       margin-bottom: 0;
       padding-left: 1rem;
-      border-left: 0.3rem solid var(--terracotta);
+      border-left: 1px solid var(--ec-signal);
       line-height: 1.5;
     }
     .state {
@@ -2376,6 +2377,206 @@ export class EcodelingExperience extends LitElement {
       margin-top: 1rem;
       background: var(--oat);
     }
+
+    /* Industrial host integration: flat ruled panels and one signal color. */
+    .frame
+      :is(
+        button,
+        select,
+        input,
+        .state,
+        .fallback,
+        .month-ribbon,
+        .marker-row button,
+        .story-panel,
+        .story-panel li button,
+        .story-panel li button > span,
+        .stage,
+        .inspector,
+        .provenance,
+        .circuit-wrap,
+        .sector,
+        .sector > span,
+        .cpi-orbit,
+        .inspection-card,
+        .agent-list button,
+        .event-list button,
+        .metric-strip > div,
+        .compare-heading,
+        .laboratory,
+        .laboratory-status,
+        .run-panel,
+        .chart-panel,
+        .cohort-panel,
+        .matching-panel,
+        .sector-comparison button,
+        .paired-chart,
+        .difference-readout > div,
+        .match-result
+      ) {
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .mode-tabs button,
+    .regime-toggle button,
+    .view-toggle button,
+    .playback-controls button,
+    .story-panel li button,
+    .agent-list button,
+    .event-list button,
+    .sector-comparison button,
+    .chart-heading select,
+    .cohort-controls select,
+    .laboratory input,
+    .laboratory select {
+      border-color: var(--ec-rule);
+      color: var(--ec-fg);
+      background: var(--ec-bg);
+    }
+    .mode-tabs button.active,
+    .regime-toggle button[aria-pressed="true"],
+    .view-toggle button[aria-pressed="true"],
+    .agent-list button[aria-pressed="true"] {
+      border-color: var(--ec-signal);
+      color: var(--ec-bg);
+      background: var(--ec-signal);
+    }
+    .mode-tabs > span {
+      border: 1px solid var(--ec-rule);
+      border-radius: 0;
+      color: var(--ec-muted);
+      background: transparent;
+    }
+    .month-ribbon {
+      border: 1px solid var(--ec-rule);
+      color: var(--ec-fg);
+      background: var(--ec-panel);
+    }
+    .month-copy span,
+    .range-labels,
+    .playback-controls label {
+      color: var(--ec-muted);
+    }
+    .month-copy strong,
+    .metric-strip strong,
+    .difference-readout strong,
+    .run-heading strong {
+      color: var(--ec-signal);
+    }
+    .playback-controls button {
+      border-color: var(--ec-rule);
+      color: var(--ec-fg);
+    }
+    .playback-controls .primary {
+      border-color: var(--ec-signal);
+      color: var(--ec-bg);
+      background: var(--ec-signal);
+    }
+    .playback-controls select {
+      border: 1px solid var(--ec-rule);
+      color: var(--ec-fg);
+      background: var(--ec-bg);
+    }
+    .marker-row {
+      border-inline: 1px solid var(--ec-rule);
+      border-bottom: 1px solid var(--ec-rule);
+    }
+    .marker-row button {
+      border: 1px solid var(--ec-rule);
+      color: var(--ec-muted);
+      background: var(--ec-bg);
+    }
+    .story-panel,
+    .stage,
+    .inspector,
+    .compare-heading,
+    .laboratory,
+    .run-panel,
+    .chart-panel,
+    .cohort-panel,
+    .matching-panel,
+    .provenance,
+    .metric-strip > div {
+      border: 1px solid var(--ec-rule);
+      background: var(--ec-panel);
+    }
+    .story-panel li button.active,
+    .sector-comparison button[aria-pressed="true"] {
+      border-color: var(--ec-signal);
+      box-shadow: inset 3px 0 0 var(--ec-signal);
+      transform: none;
+    }
+    .story-panel li button > span {
+      border: 1px solid var(--ec-rule);
+      color: var(--ec-muted);
+      background: var(--ec-bg);
+    }
+    .story-panel li button.active > span {
+      border-color: var(--ec-signal);
+      color: var(--ec-signal);
+    }
+    .circuit-wrap,
+    .paired-chart,
+    .inspection-card,
+    .event-list button,
+    .difference-readout > div,
+    .match-result {
+      border: 1px solid var(--ec-rule);
+      background: var(--ec-bg);
+    }
+    .sector {
+      background: transparent;
+      animation: none;
+    }
+    .sector > span,
+    .sector.firms > span,
+    .sector.banks > span,
+    .sector.government > span,
+    .sector.central-bank > span,
+    .sector.foreign > span {
+      border: 1px solid var(--ec-rule);
+      border-radius: 0;
+      background: var(--ec-panel-strong);
+      box-shadow: none;
+      transform: none;
+    }
+    .sector:hover > span,
+    .sector.focused > span,
+    .sector[aria-pressed="true"] > span,
+    .sector.foreign:hover > span,
+    .sector.foreign.focused > span {
+      border-color: var(--ec-signal);
+      transform: none;
+    }
+    .sector.focused {
+      color: var(--ec-signal);
+      background: transparent;
+    }
+    .cpi-orbit {
+      border: 1px solid var(--ec-signal);
+      border-radius: 0;
+      color: var(--ec-signal);
+      background: var(--ec-bg);
+    }
+    th,
+    td,
+    dl div {
+      border-color: var(--ec-rule);
+    }
+    .chart-axis {
+      stroke: var(--ec-rule);
+      opacity: 1;
+    }
+    .nominal-line {
+      stroke: var(--ec-fg);
+    }
+    .indexed-line,
+    .shared-cursor {
+      stroke: var(--ec-signal);
+    }
+    :is(small, .instruction, .quiet-marker, .baseline-note) {
+      color: var(--ec-muted);
+    }
     @keyframes breathe {
       to {
         transform: scale(1.04) rotate(2deg);
@@ -2409,7 +2610,7 @@ export class EcodelingExperience extends LitElement {
         margin-bottom: 1.5rem;
       }
       h1 {
-        font-size: clamp(2.35rem, 14cqi, 4rem);
+        font-size: clamp(1.35rem, 8cqi, 2.2rem);
       }
       .mode-tabs {
         flex-wrap: wrap;

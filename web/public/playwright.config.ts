@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 import { existsSync } from "node:fs";
 
 const systemChromium = "/usr/bin/chromium";
+const apiPort = Number(process.env.ECODELING_API_PORT ?? 8765);
+const webPort = Number(process.env.ECODELING_WEB_PORT ?? 4173);
 
 export default defineConfig({
   testDir: "./e2e",
@@ -15,7 +17,7 @@ export default defineConfig({
     },
   ],
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: `http://127.0.0.1:${webPort}`,
     browserName: "chromium",
     launchOptions: existsSync(systemChromium)
       ? { executablePath: systemChromium }
@@ -23,16 +25,15 @@ export default defineConfig({
   },
   webServer: [
     {
-      command:
-        "env UV_CACHE_DIR=/tmp/ecodeling-uv-cache ECODELING_SERVICE_DATA=/tmp/ecodeling-playwright-service uv run uvicorn ecodeling.service.api:app --host 127.0.0.1 --port 8765",
+      command: `env UV_CACHE_DIR=/tmp/ecodeling-uv-cache ECODELING_SERVICE_DATA=/tmp/ecodeling-playwright-service uv run uvicorn ecodeling.service.api:app --host 127.0.0.1 --port ${apiPort}`,
       cwd: ".",
-      url: "http://127.0.0.1:8765/docs",
+      url: `http://127.0.0.1:${apiPort}/docs`,
       reuseExistingServer: false,
     },
     {
-      command: "npm run dev:web -- --host 127.0.0.1 --port 4173",
+      command: `npm run dev:web -- --host 127.0.0.1 --port ${webPort}`,
       cwd: ".",
-      url: "http://127.0.0.1:4173/web/public/",
+      url: `http://127.0.0.1:${webPort}/web/public/`,
       reuseExistingServer: false,
     },
   ],

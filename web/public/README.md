@@ -36,14 +36,13 @@ network, decoding, and replay-compatibility failures. A host may provide static 
 
 ## Visual system
 
-The Organic system uses sand and oat surfaces, sage and moss structure, and clay, terracotta, or
-ochre signals. Fraunces is packaged locally. Rounded sector silhouettes stay stable: households
-are leaf-like, firms are shouldered, banks are arched, government is grounded, the central bank is
-a ring, and the foreign sector is an angled seed. Stock marks are filled stable shapes; future
-flow marks are paths with directional endpoints. Charts use moss axes, exact tabular labels, solid
-nominal lines, and dashed indexed lines so color is never the only regime cue. Spacing follows a
-4/8/16/32-pixel rhythm and motion uses gentle 300–500 ms easing. Reduced-motion and `static`
-replace continuous movement with discrete state changes.
+The Industrial system inherits a host's `--bg`, `--fg`, `--muted`, `--rule`, and `--accent`
+properties, with the profile site's warm black, off-white, grey, and gold as fallbacks. JetBrains
+Mono is used throughout, numerals are tabular, panels are flat, and one-pixel rules replace rounded
+cards and shadows. The economy circuit is the single signal field: recorded flows, the CPI marker,
+active controls, and indexed comparison lines use gold. Nominal lines remain solid and indexed
+lines dashed, so color is never the only regime cue. Reduced-motion and `static` replace continuous
+movement with discrete state changes.
 
 ## Story and inspection
 

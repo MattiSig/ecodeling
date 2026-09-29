@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 const directory = fileURLToPath(new URL(".", import.meta.url));
+const apiPort = Number(process.env.ECODELING_API_PORT ?? 8765);
 
 export default defineConfig({
   root: resolve(directory, "../.."),
@@ -23,7 +24,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 4173,
     proxy: {
-      "/api": "http://127.0.0.1:8765",
+      "/api": `http://127.0.0.1:${apiPort}`,
     },
   },
 });

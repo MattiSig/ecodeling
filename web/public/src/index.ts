@@ -1,3 +1,5 @@
+import "./ecodeling-experience.css";
+
 export { EcodelingExperience } from "./ecodeling-experience.js";
 export type {
   EcodelingMonthChangeDetail,

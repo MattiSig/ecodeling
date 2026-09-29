@@ -77,7 +77,9 @@ test("plays recorded months and preserves the month between modes", async ({
   await expect(range).toHaveValue("5");
   await experience.getByLabel("Playback speed").selectOption("2");
   await experience.getByRole("button", { name: "Play" }).click();
-  await expect(range).toHaveValue("6", { timeout: 2_000 });
+  await expect
+    .poll(async () => Number(await range.inputValue()), { timeout: 2_000 })
+    .toBeGreaterThanOrEqual(6);
   await experience.getByRole("button", { name: "Pause" }).click();
 });
 

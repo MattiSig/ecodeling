@@ -14,7 +14,6 @@
     "typecheck:web": "tsc --project web/public/tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fontsource-variable/fraunces": "5.2.8",
     "d3": "7.9.0",
     "lit": "3.3.1"
   },
