@@ -26,15 +26,40 @@ uv run ruff format --check .
 uv run mypy src tests
 ```
 
-The initial command-line interface exposes the installed version and a foundation validation
-check:
+The command-line interface exposes the installed version and a foundation validation check:
 
 ```bash
 uv run ecodeling --version
 uv run ecodeling validate
 ```
 
-Simulation commands will be added in later build phases.
+## Reproducible analytical experiments
+
+Phase 10 adds three JSON-configured workflows. `run` persists one model run, `shock-pair` compares
+one regime with its own no-shock counterfactual, and `compare` executes the complete four-run
+nominal/indexed experiment. Output directories must be new or empty, which prevents an experiment
+from silently mixing with older artifacts.
+
+The checked small configuration can regenerate the golden analytical report:
+
+```bash
+uv run ecodeling compare tests/fixtures/phase10_report_config.json \
+  --output outputs/phase10-example
+```
+
+Each run directory contains metadata, the complete parameter snapshot, typed event summaries, and
+Parquet aggregate, cohort, and clearing-bank series. Parquet schemas embed the run metadata and use
+Zstandard compression. The comparison also writes long-form impulse responses calculated as each
+regime's shocked path minus that same regime's no-shock path, plus six paired SVG charts and a
+bottom/top initial reporting-month income-quintile comparison. The figures are reporting
+derivatives of Python outputs; they do not recalculate economic transitions.
+
+Every output identifies the model version, Git commit, scenario, seed, shock, configuration hash,
+start month, units, and current indexation topology. Money remains nominal whole ISK; price indices
+use a base of 100,000; unavailable ratios remain null. The endogenous v0.1 economy currently uses
+one clearing bank, so bank reporting has one explicitly identified row per month. Income quintiles
+are fixed from initial reporting-month labor income with stable household IDs as the deterministic
+tie-breaker.
 
 ## Core reproducibility primitives
 

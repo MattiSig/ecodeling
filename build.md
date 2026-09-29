@@ -204,16 +204,16 @@ Verification gate: standard quality suite plus policy impulse tests and long-run
 
 Acceptance: policy tightening changes debt-service dynamics through documented channels without corrupting comparative experiments.
 
-## [ ] Phase 10 — Scenario runner, comparisons, and analytical reporting
+## [x] Phase 10 — Scenario runner, comparisons, and analytical reporting
 
 References: `specs/13_shocks_and_scenarios.md`, `specs/14_metrics_and_outputs.md`
 
-- [ ] Implement CLI commands for one run, baseline/shock pairs, and nominal/indexed comparisons.
-- [ ] Persist metadata, configuration, aggregate series, cohort series, bank series, event summaries, and parameter snapshots.
-- [ ] Calculate impulse-response-style differences from each regime's no-shock counterfactual.
-- [ ] Produce the six core paired charts and required distributional comparison.
-- [ ] Include commit, model version, scenario, seed, shock, and topology metadata in every output set.
-- [ ] Add golden reporting tests and end-to-end CLI tests.
+- [x] Implement CLI commands for one run, baseline/shock pairs, and nominal/indexed comparisons.
+- [x] Persist metadata, configuration, aggregate series, cohort series, bank series, event summaries, and parameter snapshots.
+- [x] Calculate impulse-response-style differences from each regime's no-shock counterfactual.
+- [x] Produce the six core paired charts and required distributional comparison.
+- [x] Include commit, model version, scenario, seed, shock, and topology metadata in every output set.
+- [x] Add golden reporting tests and end-to-end CLI tests.
 
 Verification gate: standard quality suite plus regeneration of a small version-controlled golden report fixture.
 
@@ -386,3 +386,8 @@ Notes: Joined the endogenous real economy to ledger-backed household mortgages a
 Baseline: 1e7a1816dad7a6a39eda2b78728779268531ce6e
 Verification: `uv sync --all-groups`; `uv run pytest` (80 passed, including policy impulse, paired-regime, and existing paired 600-month tests); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; dedicated 600-month policy stress run with accounting/rate/debt bounds; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Added an exact annual-basis-point Taylor-like rule with smoothing, configurable bounds, and a held initial rate until trailing twelve-month CPI exists. Month-end decisions become eligible only in the following month; nominal and indexed mortgages reset on independent schedules with distinct pass-through, while deposit and bank-funding channel rates are recorded separately. Typed decision/reset events link every applicable rate to its inflation observation and source decision, and monthly/household outputs separate coupon-driven interest from CPI principal revaluation. The checked paired impulse fixture shows nominal tightening through debt service versus indexed CPI revaluation plus weaker coupon pass-through. Existing isolated mortgage and micro-model contracts remain fixed-rate; the Phase 06 calibration explicitly pins policy to preserve its historical boundary. Result-affecting policy parameters changed the canonical configuration hash, so replay v0 was regenerated and reconciled.
+
+2026-09-29 — Phase 10 — COMPLETE
+Baseline: 6064e6d613dccfa718b859021b0558e0c2041e9a
+Verification: `uv sync --all-groups`; `uv run pytest` (82 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run python scripts/generate_phase10_golden.py`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Added `run`, `shock-pair`, and `compare` workflows. A complete comparison executes nominal/indexed regimes against their own no-shock counterfactuals with common initialization and shocks, persists Zstandard-compressed Parquet aggregates/cohorts/bank series plus metadata, parameter snapshots, and typed event summaries, and calculates aligned long-form impulse responses. Bank credit losses are read from authoritative default ledger postings. The deterministic SVG report contains the six core paired mechanisms and an initial-income-quintile consumption comparison; charts remain Python reporting derivatives rather than a second economic engine. The checked 20-household fixture and end-to-end CLI tests regenerate all four paths. Pandas and PyArrow activate the already-locked analytical-output architecture.
