@@ -218,3 +218,32 @@ config = ModelConfig(
 result = run_economy_simulation(config)
 print(result.shock_events[0])
 ```
+
+## Endogenous mortgage-indexation feedback
+
+Phase 08 joins the real-economy and mortgage mechanisms in `run_economy_simulation`. A seeded
+opening population now includes ledger-backed houses and mortgages. Mortgage alpha is converted
+to integer basis points and may take any configured value from zero through one; the coupon
+interpolates between the documented nominal and indexed pricing decompositions instead of using
+scenario-specific branches.
+
+The monthly information convention is explicit: CPI is calculated after the goods market closes,
+so it cannot affect a mortgage in that same month. A payment in month `t` uses CPI from
+`t - lag_months - 1` and its preceding observation. Revaluation is posted symmetrically to the
+borrower liability and bank asset before payment, arrears/default processing, and the household's
+next goods budget. Current mortgage interest is distributed deterministically as household bank
+dividends during financial closure; this is a stylized closure assumption that prevents an omitted
+bank-spending sector from becoming a permanent demand sink, not an empirical claim.
+
+Results expose household mortgage flows, aggregate principal, debt service, arrears/defaults, bank
+assets/equity, source ledger IDs, and typed feedback events connecting a foreign shock to its CPI
+observation and later mortgage and consumption response. Common-random-number comparisons use the
+same initialization, labor/goods streams, and exogenous shock path:
+
+```python
+from ecodeling.economy import run_endogenous_indexation_comparison
+
+pair = run_endogenous_indexation_comparison(config)
+print(pair.nominal.aggregate_months[-1].total_mortgage_principal)
+print(pair.indexed.aggregate_months[-1].total_mortgage_principal)
+```

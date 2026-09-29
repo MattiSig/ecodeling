@@ -175,16 +175,16 @@ Verification gate: standard quality suite plus an impulse-response fixture showi
 
 Acceptance: the path `FX → import costs → firm prices → CPI` is reproducible and traceable.
 
-## [ ] Phase 08 — Close the endogenous indexation feedback loop
+## [x] Phase 08 — Close the endogenous indexation feedback loop
 
 References: `specs/01_research_question.md`, `specs/03_indexation_contract_spec.md`, `specs/12_simulation_loop.md`, `specs/13_shocks_and_scenarios.md`
 
-- [ ] Feed correctly lagged endogenous CPI into mortgage revaluation.
-- [ ] Feed balance-sheet and payment effects back into household consumption, arrears/defaults, and bank state.
-- [ ] Implement `alpha_indexation` values from 0 through 1 without special-case scenario code.
-- [ ] Ensure the monthly stage order prevents same-period look-ahead.
-- [ ] Produce paired nominal/indexed runs using common initialization and shock streams.
-- [ ] Add causal trace fixtures linking shock, CPI, revaluation, household response, and bank response.
+- [x] Feed correctly lagged endogenous CPI into mortgage revaluation.
+- [x] Feed balance-sheet and payment effects back into household consumption, arrears/defaults, and bank state.
+- [x] Implement `alpha_indexation` values from 0 through 1 without special-case scenario code.
+- [x] Ensure the monthly stage order prevents same-period look-ahead.
+- [x] Produce paired nominal/indexed runs using common initialization and shock streams.
+- [x] Add causal trace fixtures linking shock, CPI, revaluation, household response, and bank response.
 
 Verification gate: standard quality suite plus paired 600-month runs with accounting, timing, and common-random-number assertions.
 
@@ -376,3 +376,8 @@ Notes: Added a separate staged real-economy engine so Phase 04's external-path c
 Baseline: 035730525537377a8e994cf44b0cfd19df49d08a
 Verification: `uv sync --all-groups`; `uv run pytest` (72 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `uv run pytest tests/integration/test_foreign_impulse.py tests/unit/test_foreign_sector.py` (7 passed); `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Added integer-indexed exogenous FX and foreign-price paths, configurable one-month or permanent shocks, and imported firm inputs whose baseline share is derived relative to labor unit cost. Import bills settle to a foreign-sector deposit through mirrored bank claims; monthly aggregate flows retain their ledger entry IDs, and typed onset events record the before/after causal step. Current-month foreign prices are observed before production/import settlement/pricing, while CPI remains derived from actual goods transactions and is not yet fed into mortgages. Decimal shock magnitudes are converted once to basis points with half-up rounding; all downstream indices and ISK flows use integer arithmetic. The default zero import share preserves Phase 06 behavior, while a fixed 10% depreciation fixture verifies the traceable import-cost and CPI impulse. Result-affecting configuration changed the canonical hash, so replay v0 was regenerated and reconciled without changing its analytical series.
+
+2026-09-29 — Phase 08 — COMPLETE
+Baseline: ee02cee245dc403e61b59ce1248d545737bc7efe
+Verification: `uv sync --all-groups`; `uv run pytest` (75 passed, including paired 600-month nominal/indexed runs); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Joined the endogenous real economy to ledger-backed household mortgages and the bank balance sheet. CPI produced at period end becomes eligible only after one information month plus the configured contract lag; typed feedback events retain the source shock, CPI observations, revaluation ledger entry, debt service, household consumption, arrears/defaults, and bank equity. Mortgage alpha is converted once to integer basis points and uses one continuous coupon/indexation rule across the full 0.0–1.0 range. The paired runner changes only alpha/scenario identity while preserving initialized households/firms, named random streams, and the exogenous shock path. Current mortgage interest is returned deterministically as household bank dividends, a documented stylized closure assumption preventing the omitted bank-spending sector from becoming a permanent demand sink. The Phase 06 no-shock tolerance now permits a one-household employment fluctuation, and its aggregate goods assertion correctly includes opening inventory.

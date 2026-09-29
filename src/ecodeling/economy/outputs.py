@@ -21,6 +21,14 @@ class HouseholdEconomyMonthlyOutput:
     consumption_units: int
     consumption_expenditure: ISK
     closing_deposits: ISK
+    scheduled_mortgage_payment: ISK
+    actual_mortgage_payment: ISK
+    mortgage_interest: ISK
+    mortgage_revaluation: ISK
+    closing_mortgage_principal: ISK
+    arrears: ISK
+    arrears_months: int
+    defaulted: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +82,36 @@ class EconomyMonthlyOutput:
     cpi_level: int
     monthly_inflation_bps: int
     annual_inflation_bps: int | None
+    total_mortgage_principal: ISK
+    indexation_revaluation: ISK
+    debt_service: ISK
+    arrears_households: int
+    defaults: int
+    bank_mortgage_assets: ISK
+    bank_equity: ISK
+    revaluation_ledger_entry_id: LedgerEntryId | None
+
+
+@dataclass(frozen=True, slots=True)
+class MortgageFeedbackEvent:
+    """Recorded causal step from an observed CPI movement to financial responses."""
+
+    event_id: str
+    month: YearMonth
+    source_shock_event_id: str | None
+    cpi_observation_month: YearMonth
+    previous_cpi_observation_month: YearMonth
+    cpi_level: int
+    previous_cpi_level: int
+    alpha_bps: int
+    mortgage_revaluation: ISK
+    scheduled_debt_service: ISK
+    actual_debt_service: ISK
+    arrears_households: int
+    defaults: int
+    consumption_expenditure: ISK
+    bank_equity: ISK
+    revaluation_ledger_entry_id: LedgerEntryId
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,4 +145,13 @@ class EconomySimulationResult:
     firm_months: tuple[FirmMonthlyOutput, ...]
     aggregate_months: tuple[EconomyMonthlyOutput, ...]
     shock_events: tuple[ForeignShockEvent, ...]
+    feedback_events: tuple[MortgageFeedbackEvent, ...]
     ledger: Ledger
+
+
+@dataclass(frozen=True, slots=True)
+class PairedEconomyResult:
+    """Nominal and fully indexed endogenous runs with common random numbers."""
+
+    nominal: EconomySimulationResult
+    indexed: EconomySimulationResult

@@ -6,7 +6,7 @@
   "firm_cash_buffer_months": 180,
   "cpi_min": 100000,
   "cpi_max": 100000,
-  "employment_min": 200,
+  "employment_min": 199,
   "employment_max": 200,
   "monthly_inflation_abs_max_bps": 0
 }

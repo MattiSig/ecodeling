@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from ecodeling.accounting import ISK
-from ecodeling.identifiers import AgentId
+from ecodeling.identifiers import AgentId, ContractId
 
 
 @dataclass(frozen=True, slots=True)
@@ -12,6 +12,9 @@ class WorkerHousehold:
 
     id: AgentId
     opening_deposits: ISK
+    house_value: ISK
+    opening_mortgage: ISK
+    mortgage_id: ContractId | None
 
 
 @dataclass(frozen=True, slots=True)

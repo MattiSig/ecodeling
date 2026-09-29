@@ -35,6 +35,12 @@ def test_seeded_no_shock_baseline_stays_within_calibrated_bounds() -> None:
         max(abs(row.monthly_inflation_bps) for row in aggregates)
         <= fixture["monthly_inflation_abs_max_bps"]
     )
-    assert all(row.production_units >= row.sales_units for row in aggregates)
+    opening_inventory = 0
+    for row in aggregates:
+        assert (
+            opening_inventory + row.production_units
+            == row.sales_units + row.closing_inventory_units
+        )
+        opening_inventory = row.closing_inventory_units
     assert all(row.household_consumption == row.firm_revenue for row in aggregates)
     result.ledger.assert_accounting_invariants()

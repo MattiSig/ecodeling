@@ -20,10 +20,20 @@ from ecodeling.accounting import (
     AccountKind,
     Ledger,
     Posting,
+    RevaluationEntry,
     Sector,
     TransactionEntry,
 )
 from ecodeling.config.schema import ModelConfig, ShockKind, ShockPersistence
+from ecodeling.contracts import (
+    IndexObservation,
+    MortgageContract,
+    MortgagePricing,
+    MortgageState,
+    MortgageStatus,
+    ReferenceIndex,
+    calculate_period,
+)
 from ecodeling.economy.entities import Firm, WorkerHousehold
 from ecodeling.economy.outputs import (
     EconomyMonthlyOutput,
@@ -31,8 +41,18 @@ from ecodeling.economy.outputs import (
     FirmMonthlyOutput,
     ForeignShockEvent,
     HouseholdEconomyMonthlyOutput,
+    MortgageFeedbackEvent,
+    PairedEconomyResult,
 )
-from ecodeling.identifiers import AccountId, AgentId, ContractId, LedgerEntryId, RunId
+from ecodeling.identifiers import (
+    AccountId,
+    AgentId,
+    ContractId,
+    LedgerEntryId,
+    ReferenceIndexId,
+    RunId,
+    ScenarioId,
+)
 from ecodeling.model.clock import YearMonth
 from ecodeling.randomness import NamedRandomStreams, RandomStream
 
@@ -56,6 +76,10 @@ class _FirmState:
 class _HouseholdState:
     employer_id: AgentId | None
     deposits: ISK
+    principal: ISK
+    mortgage_state: MortgageState | None
+    arrears_months: int = 0
+    defaulted: bool = False
 
 
 def _round_ratio(numerator: int, denominator: int) -> int:
@@ -121,6 +145,18 @@ def _equity(agent_id: AgentId) -> AccountId:
     return AccountId(f"{agent_id}:equity")
 
 
+def _house(household_id: AgentId) -> AccountId:
+    return AccountId(f"{household_id}:house")
+
+
+def _mortgage_liability(household_id: AgentId) -> AccountId:
+    return AccountId(f"{household_id}:mortgage")
+
+
+def _mortgage_asset(mortgage_id: ContractId) -> AccountId:
+    return AccountId(f"{_BANK_ID}:{mortgage_id}:mortgage")
+
+
 def _reserve() -> AccountId:
     return AccountId(f"{_BANK_ID}:external-settlement")
 
@@ -131,13 +167,37 @@ def _external_liability() -> AccountId:
 
 def _create_agents(config: ModelConfig) -> tuple[tuple[WorkerHousehold, ...], tuple[Firm, ...]]:
     economy = config.real_economy
-    households = tuple(
-        WorkerHousehold(
-            AgentId(f"worker-household-{index + 1:05d}"),
-            economy.opening_household_deposits_isk,
-        )
-        for index in range(config.micro.households)
+    initialization_rng = NamedRandomStreams(config.simulation.seed).generator(
+        RandomStream.INITIALIZATION
     )
+    household_count = config.micro.households
+    mortgage_count = int(Decimal(str(config.micro.mortgage_share)) * household_count)
+    mortgaged_indexes = set(
+        int(index) for index in initialization_rng.permutation(household_count)[:mortgage_count]
+    )
+    house_values = initialization_rng.integers(30_000_000, 60_000_001, size=household_count)
+    ltv_bps = initialization_rng.integers(5_000, 9_001, size=household_count)
+    household_rows: list[WorkerHousehold] = []
+    for index in range(household_count):
+        household_id = AgentId(f"worker-household-{index + 1:05d}")
+        if index in mortgaged_indexes:
+            house_value = int(house_values[index])
+            principal = _round_ratio(house_value * int(ltv_bps[index]), _BPS)
+            mortgage_id = ContractId(f"economy-mortgage-{index + 1:05d}")
+        else:
+            house_value = 0
+            principal = 0
+            mortgage_id = None
+        household_rows.append(
+            WorkerHousehold(
+                household_id,
+                economy.opening_household_deposits_isk,
+                house_value,
+                principal,
+                mortgage_id,
+            )
+        )
+    households = tuple(household_rows)
     labor_unit_cost = _round_ratio(
         economy.monthly_wage_isk,
         economy.productivity_units_per_worker,
@@ -241,6 +301,7 @@ def _register_and_open(
     )
     postings: list[Posting] = []
     total_deposits = 0
+    total_mortgages = 0
     agents: tuple[WorkerHousehold | Firm, ...] = (*households, *firms)
     for agent in agents:
         claim = ContractId(f"economy:deposit:{agent.id}")
@@ -254,6 +315,37 @@ def _register_and_open(
                 claim,
             )
         )
+        if isinstance(agent, WorkerHousehold) and agent.house_value:
+            ledger.register_account(
+                Account(
+                    _house(agent.id),
+                    agent.id,
+                    Sector.HOUSEHOLDS,
+                    "House",
+                    AccountKind.REAL_ASSET,
+                )
+            )
+        if isinstance(agent, WorkerHousehold) and agent.mortgage_id is not None:
+            ledger.register_account(
+                Account(
+                    _mortgage_liability(agent.id),
+                    agent.id,
+                    Sector.HOUSEHOLDS,
+                    "Mortgage liability",
+                    AccountKind.LIABILITY,
+                    agent.mortgage_id,
+                )
+            )
+            ledger.register_account(
+                Account(
+                    _mortgage_asset(agent.mortgage_id),
+                    _BANK_ID,
+                    Sector.BANKS,
+                    "Mortgage asset",
+                    AccountKind.FINANCIAL_ASSET,
+                    agent.mortgage_id,
+                )
+            )
         ledger.register_account(
             Account(
                 _deposit_liability(agent.id),
@@ -284,6 +376,18 @@ def _register_and_open(
                 )
             )
             total_deposits += amount
+        if isinstance(agent, WorkerHousehold) and agent.house_value:
+            postings.append(Posting(_house(agent.id), agent.house_value))
+            postings.append(Posting(_equity(agent.id), agent.house_value))
+        if isinstance(agent, WorkerHousehold) and agent.mortgage_id is not None:
+            postings.extend(
+                (
+                    Posting(_mortgage_liability(agent.id), agent.opening_mortgage),
+                    Posting(_mortgage_asset(agent.mortgage_id), agent.opening_mortgage),
+                    Posting(_equity(agent.id), -agent.opening_mortgage),
+                )
+            )
+            total_mortgages += agent.opening_mortgage
     postings.extend(
         (
             Posting(_reserve(), total_deposits),
@@ -291,12 +395,21 @@ def _register_and_open(
             Posting(_equity(_EXTERNAL_ID), -total_deposits),
         )
     )
+    if total_mortgages:
+        postings.append(Posting(_equity(_BANK_ID), total_mortgages))
+    opening_changes: dict[AccountId, int] = defaultdict(int)
+    for posting in postings:
+        opening_changes[posting.account_id] += posting.amount
     ledger.post(
         TransactionEntry(
             LedgerEntryId("economy:opening"),
             month,
             "Opening household, firm, and clearing balance sheets",
-            tuple(postings),
+            tuple(
+                Posting(account_id, amount)
+                for account_id, amount in opening_changes.items()
+                if amount
+            ),
         )
     )
 
@@ -323,14 +436,87 @@ def _transfer_entry(
     return TransactionEntry(entry_id, month, description, postings) if postings else None
 
 
+def _alpha_bps(config: ModelConfig) -> int:
+    return int(
+        (Decimal(str(config.indexation.mortgage_alpha)) * Decimal(_BPS)).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        )
+    )
+
+
+def _mortgage_contracts(
+    config: ModelConfig,
+    households: tuple[WorkerHousehold, ...],
+) -> dict[AgentId, MortgageContract]:
+    alpha_bps = _alpha_bps(config)
+    pricing = MortgagePricing(
+        real_rate_bps=config.micro.real_rate_bps,
+        expected_inflation_bps=config.micro.expected_inflation_bps,
+        inflation_risk_premium_bps=config.micro.inflation_risk_premium_bps,
+        credit_spread_bps=config.micro.credit_spread_bps,
+        term_spread_bps=0,
+        bank_margin_bps=0,
+    )
+    inflation_compensation = (
+        config.micro.expected_inflation_bps + config.micro.inflation_risk_premium_bps
+    )
+    annual_rate_bps = pricing.indexed_coupon_bps + _round_ratio(
+        inflation_compensation * (_BPS - alpha_bps), _BPS
+    )
+    start_month = config.simulation.start_month.add_months(-1)
+    reference_id = ReferenceIndexId("endogenous-cpi")
+    return {
+        household.id: MortgageContract(
+            id=household.mortgage_id,
+            borrower_id=household.id,
+            lender_id=_BANK_ID,
+            principal=household.opening_mortgage,
+            annual_rate_bps=annual_rate_bps,
+            alpha_bps=alpha_bps,
+            # CPI is generated at period end, so availability contributes one
+            # month in addition to the explicit contractual lag.
+            indexation_lag_months=config.indexation.lag_months + 1,
+            reference_index_id=reference_id,
+            start_month=start_month,
+            term_months=config.micro.mortgage_term_months,
+            borrower_deposit_account_id=_deposit_asset(household.id),
+            lender_deposit_account_id=_deposit_liability(household.id),
+            borrower_mortgage_account_id=_mortgage_liability(household.id),
+            lender_mortgage_account_id=_mortgage_asset(household.mortgage_id),
+            borrower_equity_account_id=_equity(household.id),
+            lender_equity_account_id=_equity(_BANK_ID),
+        )
+        for household in households
+        if household.mortgage_id is not None
+    }
+
+
 def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
     """Run staged domestic markets with exogenous foreign prices and FX."""
     households, firms = _create_agents(config)
     economy = config.real_economy
     ledger = Ledger()
     _register_and_open(ledger, households, firms, config.simulation.start_month.add_months(-1))
+    contracts = _mortgage_contracts(config, households)
+    mortgage_start = config.simulation.start_month.add_months(-1)
     household_states = {
-        household.id: _HouseholdState(None, household.opening_deposits) for household in households
+        household.id: _HouseholdState(
+            None,
+            household.opening_deposits,
+            household.opening_mortgage,
+            (
+                MortgageState(
+                    household.mortgage_id,
+                    mortgage_start,
+                    household.opening_mortgage,
+                    config.micro.mortgage_term_months,
+                    MortgageStatus.ACTIVE,
+                )
+                if household.mortgage_id is not None
+                else None
+            ),
+        )
+        for household in households
     }
     full_employment_units = len(households) * economy.productivity_units_per_worker
     expected_per_firm = _ceil_ratio(full_employment_units, len(firms))
@@ -353,12 +539,20 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
     firm_outputs: list[FirmMonthlyOutput] = []
     aggregate_outputs: list[EconomyMonthlyOutput] = []
     shock_events: list[ForeignShockEvent] = []
+    feedback_events: list[MortgageFeedbackEvent] = []
     base_price_sum = sum(firm.opening_price for firm in firms)
     baseline_import_price = _round_ratio(
         config.foreign_sector.baseline_exchange_rate_index
         * config.foreign_sector.baseline_foreign_price_index,
         _PRICE_BASE,
     )
+    cpi_history = [
+        IndexObservation(
+            config.simulation.start_month.add_months(-offset),
+            _PRICE_BASE,
+        )
+        for offset in range(config.indexation.lag_months + 2, 0, -1)
+    ]
 
     for offset in range(config.simulation.months):
         month = config.simulation.start_month.add_months(offset)
@@ -512,7 +706,166 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
             state.price = max(1, state.price + adjustment)
             prices[firm.id] = state.price
 
-        # 7. Randomized search plans purchases against a provisional inventory snapshot.
+        # 7. Mortgage revaluation and settlement use only CPI observations that
+        # existed before this period. Payment and balance-sheet effects therefore
+        # become available before households form consumption budgets.
+        reference_index = ReferenceIndex(ReferenceIndexId("endogenous-cpi"), tuple(cpi_history))
+        revaluation_postings: list[Posting] = []
+        settlement_postings: list[Posting] = []
+        default_postings: list[Posting] = []
+        mortgage_values: dict[AgentId, tuple[int, int, int, int, int, bool]] = {}
+        total_bank_revaluation = 0
+        total_bank_interest = 0
+        total_bank_losses = 0
+        for household in households:
+            household_state = household_states[household.id]
+            if (
+                household_state.mortgage_state is None
+                or household_state.defaulted
+                or household_state.principal == 0
+            ):
+                mortgage_values[household.id] = (0, 0, 0, 0, 0, False)
+                continue
+            calculated = calculate_period(
+                contracts[household.id], household_state.mortgage_state, month, reference_index
+            )
+            revaluation = calculated.indexation_revaluation
+            if revaluation:
+                revaluation_postings.extend(
+                    (
+                        Posting(_mortgage_liability(household.id), revaluation),
+                        Posting(_equity(household.id), -revaluation),
+                        Posting(_mortgage_asset(contracts[household.id].id), revaluation),
+                    )
+                )
+                total_bank_revaluation += revaluation
+            actual_payment = min(household_state.deposits, calculated.scheduled_payment)
+            interest_paid = min(actual_payment, calculated.interest)
+            principal_paid = max(0, actual_payment - calculated.interest)
+            unpaid_interest = calculated.interest - interest_paid
+            mortgage_change = -principal_paid + unpaid_interest
+            if actual_payment:
+                settlement_postings.extend(
+                    (
+                        Posting(_deposit_asset(household.id), -actual_payment),
+                        Posting(_deposit_liability(household.id), -actual_payment),
+                    )
+                )
+            if mortgage_change:
+                settlement_postings.extend(
+                    (
+                        Posting(_mortgage_liability(household.id), mortgage_change),
+                        Posting(_mortgage_asset(contracts[household.id].id), mortgage_change),
+                    )
+                )
+            if calculated.interest:
+                settlement_postings.append(Posting(_equity(household.id), -calculated.interest))
+                total_bank_interest += calculated.interest
+            household_state.deposits -= actual_payment
+            household_state.principal = (
+                calculated.preflow_principal + unpaid_interest - principal_paid
+            )
+            arrears = calculated.scheduled_payment - actual_payment
+            household_state.arrears_months = household_state.arrears_months + 1 if arrears else 0
+            defaulted_now = (
+                household_state.arrears_months >= config.micro.default_after_arrears_months
+            )
+            if defaulted_now:
+                loss = household_state.principal
+                default_postings.extend(
+                    (
+                        Posting(_mortgage_liability(household.id), -loss),
+                        Posting(_equity(household.id), loss),
+                        Posting(_mortgage_asset(contracts[household.id].id), -loss),
+                    )
+                )
+                total_bank_losses += loss
+                household_state.principal = 0
+                household_state.defaulted = True
+                household_state.mortgage_state = None
+            elif household_state.principal == 0:
+                household_state.mortgage_state = None
+            else:
+                household_state.mortgage_state = MortgageState(
+                    contracts[household.id].id,
+                    month,
+                    household_state.principal,
+                    max(1, calculated.opening_remaining_payments - 1),
+                    MortgageStatus.ACTIVE,
+                )
+            mortgage_values[household.id] = (
+                calculated.scheduled_payment,
+                actual_payment,
+                calculated.interest,
+                revaluation,
+                arrears,
+                defaulted_now,
+            )
+        if total_bank_revaluation:
+            revaluation_postings.append(Posting(_equity(_BANK_ID), total_bank_revaluation))
+        if total_bank_interest:
+            settlement_postings.append(Posting(_equity(_BANK_ID), total_bank_interest))
+        if total_bank_losses:
+            default_postings.append(Posting(_equity(_BANK_ID), -total_bank_losses))
+        revaluation_entry = (
+            RevaluationEntry(
+                LedgerEntryId(f"economy:{month}:cpi-revaluation"),
+                month,
+                "Lagged endogenous-CPI mortgage revaluation",
+                tuple(revaluation_postings),
+            )
+            if revaluation_postings
+            else None
+        )
+        if revaluation_entry is not None:
+            ledger.post(revaluation_entry)
+        if settlement_postings:
+            ledger.post(
+                TransactionEntry(
+                    LedgerEntryId(f"economy:{month}:mortgage-settlement"),
+                    month,
+                    "Mortgage payment and arrears capitalization",
+                    tuple(settlement_postings),
+                )
+            )
+        if default_postings:
+            ledger.post(
+                RevaluationEntry(
+                    LedgerEntryId(f"economy:{month}:defaults"),
+                    month,
+                    "Zero-recovery mortgage default write-down",
+                    tuple(default_postings),
+                )
+            )
+
+        # The stylized bank distributes current mortgage interest as household
+        # dividends. This closes the otherwise omitted bank-income circuit while
+        # retaining principal repayment, revaluation, arrears, and losses on its
+        # balance sheet. Distribution is deterministic and independent of regime.
+        if total_bank_interest:
+            dividend, remainder = divmod(total_bank_interest, len(households))
+            dividend_postings: list[Posting] = [Posting(_equity(_BANK_ID), -total_bank_interest)]
+            for index, household in enumerate(households):
+                amount = dividend + (index < remainder)
+                if amount:
+                    household_states[household.id].deposits += amount
+                    dividend_postings.extend(
+                        (
+                            Posting(_deposit_asset(household.id), amount),
+                            Posting(_deposit_liability(household.id), amount),
+                            Posting(_equity(household.id), amount),
+                        )
+                    )
+            ledger.post(
+                TransactionEntry(
+                    LedgerEntryId(f"economy:{month}:bank-dividends"),
+                    month,
+                    "Distribution of current mortgage interest income",
+                    tuple(dividend_postings),
+                )
+            )
+
+        # 8. Randomized search plans purchases against a provisional inventory snapshot.
         # Firm state is mutated only after the complete allocation plan exists.
         budgets = {
             household.id: min(
@@ -571,7 +924,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         if goods_entry is not None:
             ledger.post(goods_entry)
 
-        # 8. Complete expectations and derive CPI only from transacted firm prices.
+        # 9. Complete expectations and derive CPI only from transacted firm prices.
         for firm in firms:
             state = firm_states[firm.id]
             state.expected_demand += _round_ratio(
@@ -596,9 +949,13 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
             if offset >= 12
             else None
         )
+        cpi_history.append(IndexObservation(month, cpi))
 
         for household in households:
             household_state = household_states[household.id]
+            scheduled, paid, interest, revaluation, arrears, defaulted_now = mortgage_values[
+                household.id
+            ]
             household_outputs.append(
                 HouseholdEconomyMonthlyOutput(
                     month,
@@ -609,6 +966,14 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                     allocated_units[household.id],
                     expenditures[household.id],
                     household_state.deposits,
+                    scheduled,
+                    paid,
+                    interest,
+                    revaluation,
+                    household_state.principal,
+                    arrears,
+                    household_state.arrears_months,
+                    defaulted_now,
                 )
             )
         for firm in firms:
@@ -641,31 +1006,76 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 )
             )
         employed = sum(state.employer_id is not None for state in household_states.values())
-        aggregate_outputs.append(
-            EconomyMonthlyOutput(
-                month,
-                employed,
-                len(households) - employed,
-                sum(
-                    max(0, desired_workers[firm.id] - len(firm_states[firm.id].employees))
-                    for firm in firms
-                ),
-                sum(production.values()),
-                total_sales,
-                sum(state.inventory for state in firm_states.values()),
-                sum(wages.values()),
-                sum(expenditures.values()),
-                sum(revenues.values()),
-                exchange_rate,
-                foreign_price,
-                import_price,
-                sum(import_expenditures.values()),
-                import_entry_id,
-                cpi,
-                monthly_inflation,
-                annual_inflation,
-            )
+        total_principal = sum(state.principal for state in household_states.values())
+        total_revaluation = sum(value[3] for value in mortgage_values.values())
+        total_scheduled = sum(value[0] for value in mortgage_values.values())
+        total_paid = sum(value[1] for value in mortgage_values.values())
+        arrears_households = sum(value[4] > 0 for value in mortgage_values.values())
+        defaults = sum(value[5] for value in mortgage_values.values())
+        bank_mortgage_assets = sum(
+            ledger.balance(_mortgage_asset(contract.id)) for contract in contracts.values()
         )
+        bank_equity = ledger.balance(_equity(_BANK_ID))
+        aggregate = EconomyMonthlyOutput(
+            month,
+            employed,
+            len(households) - employed,
+            sum(
+                max(0, desired_workers[firm.id] - len(firm_states[firm.id].employees))
+                for firm in firms
+            ),
+            sum(production.values()),
+            total_sales,
+            sum(state.inventory for state in firm_states.values()),
+            sum(wages.values()),
+            sum(expenditures.values()),
+            sum(revenues.values()),
+            exchange_rate,
+            foreign_price,
+            import_price,
+            sum(import_expenditures.values()),
+            import_entry_id,
+            cpi,
+            monthly_inflation,
+            annual_inflation,
+            total_principal,
+            total_revaluation,
+            total_paid,
+            arrears_households,
+            defaults,
+            bank_mortgage_assets,
+            bank_equity,
+            revaluation_entry.id if revaluation_entry is not None else None,
+        )
+        aggregate_outputs.append(aggregate)
+        if revaluation_entry is not None:
+            referenced_month = month.add_months(-(config.indexation.lag_months + 1))
+            previous_month = referenced_month.add_months(-1)
+            source_shock = (
+                shock_events[0].event_id
+                if shock_events and shock_events[0].month <= referenced_month
+                else None
+            )
+            feedback_events.append(
+                MortgageFeedbackEvent(
+                    event_id=f"mortgage-feedback:{month}",
+                    month=month,
+                    source_shock_event_id=source_shock,
+                    cpi_observation_month=referenced_month,
+                    previous_cpi_observation_month=previous_month,
+                    cpi_level=reference_index.level(referenced_month),
+                    previous_cpi_level=reference_index.level(previous_month),
+                    alpha_bps=_alpha_bps(config),
+                    mortgage_revaluation=total_revaluation,
+                    scheduled_debt_service=total_scheduled,
+                    actual_debt_service=total_paid,
+                    arrears_households=arrears_households,
+                    defaults=defaults,
+                    consumption_expenditure=aggregate.household_consumption,
+                    bank_equity=bank_equity,
+                    revaluation_ledger_entry_id=revaluation_entry.id,
+                )
+            )
         for household in households:
             assert (
                 ledger.balance(_deposit_asset(household.id))
@@ -687,5 +1097,29 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         tuple(firm_outputs),
         tuple(aggregate_outputs),
         tuple(shock_events),
+        tuple(feedback_events),
         ledger,
     )
+
+
+def run_endogenous_indexation_comparison(config: ModelConfig) -> PairedEconomyResult:
+    """Run common-seed nominal and fully indexed endogenous economies."""
+    nominal_config = config.model_copy(
+        update={
+            "scenario_id": ScenarioId(f"{config.scenario_id}-nominal"),
+            "indexation": config.indexation.model_copy(update={"mortgage_alpha": 0.0}),
+        }
+    )
+    indexed_config = config.model_copy(
+        update={
+            "scenario_id": ScenarioId(f"{config.scenario_id}-indexed"),
+            "indexation": config.indexation.model_copy(update={"mortgage_alpha": 1.0}),
+        }
+    )
+    nominal = run_economy_simulation(nominal_config)
+    indexed = run_economy_simulation(indexed_config)
+    if nominal.households != indexed.households or nominal.firms != indexed.firms:
+        raise AssertionError("paired regimes did not share identical initialization")
+    if nominal.shock_events != indexed.shock_events:
+        raise AssertionError("paired regimes did not share the configured shock path")
+    return PairedEconomyResult(nominal, indexed)

@@ -1,0 +1,21 @@
+{
+  "seed": 808,
+  "households": 40,
+  "firms": 4,
+  "shock_month": 3,
+  "shock_magnitude": 0.1,
+  "lag_months": 1,
+  "impact_month": "2025-06",
+  "source_cpi_month": "2025-04",
+  "previous_cpi_month": "2025-03",
+  "source_cpi_level": 100667,
+  "previous_cpi_level": 100000,
+  "mortgage_revaluation": 6009862,
+  "scheduled_debt_service": 3213606,
+  "actual_debt_service": 3075614,
+  "consumption_expenditure": 11892908,
+  "bank_equity": 909835404,
+  "arrears_households": 3,
+  "defaults": 0,
+  "revaluation_ledger_entry_id": "economy:2025-06:cpi-revaluation"
+}
