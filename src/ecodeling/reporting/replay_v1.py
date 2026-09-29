@@ -28,7 +28,7 @@ from ecodeling.economy.outputs import (
 
 Month = Annotated[str, Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")]
 ISKValue = Annotated[int, Field(description="Exact nominal whole Icelandic kronur")]
-REPLAY_EXPORT_REVISION = "stocks-1"
+REPLAY_EXPORT_REVISION = "demand-2"
 DEFAULT_MAX_UNCOMPRESSED_BYTES = 2_000_000
 
 
@@ -120,7 +120,14 @@ class SectorFlowV1(ReplayModel):
     regime: Literal["nominal", "indexed"]
     month: Month
     flow_type: Literal[
-        "wages", "consumption", "imports", "interest", "principal_payment", "bank_dividend"
+        "wages",
+        "consumption",
+        "imports",
+        "exports",
+        "external_financing",
+        "interest",
+        "principal_payment",
+        "bank_dividend",
     ]
     source_sector: str
     target_sector: str
@@ -489,6 +496,20 @@ def _flows(
                 f"economy:{month}:imports",
             ),
             (
+                "exports",
+                "foreign",
+                "firms",
+                aggregate.export_revenue,
+                f"economy:{month}:exports",
+            ),
+            (
+                "external_financing",
+                "banks",
+                "foreign",
+                aggregate.external_financing,
+                f"economy:{month}:export-funding",
+            ),
+            (
                 "interest",
                 "households",
                 "banks",
@@ -506,7 +527,7 @@ def _flows(
                 "bank_dividend",
                 "banks",
                 "households",
-                aggregate.mortgage_interest,
+                aggregate.bank_dividends,
                 f"economy:{month}:bank-dividends",
             ),
         )
@@ -682,6 +703,18 @@ def _aggregate_series(
             "ISK",
             "nominal",
             tuple(row.household_consumption for row in result.aggregate_months),
+        ),
+        (
+            "real_consumption",
+            "physical_units",
+            "real",
+            tuple(row.sales_units - row.export_units for row in result.aggregate_months),
+        ),
+        (
+            "exports",
+            "ISK",
+            "nominal",
+            tuple(row.export_revenue for row in result.aggregate_months),
         ),
         (
             "policy_rate",

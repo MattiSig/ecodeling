@@ -1,22 +1,72 @@
 {
   "artifacts": [
-    {"path": "tests/fixtures/phase10_report_config.json", "sha256": "cb1be614760c8e543658abc6651e562efb13a77ac37647bf93e13fae87c7d0d8"},
-    {"path": "publication/v0.1/canonical-config.json", "sha256": "13bcf692e6426cfd783694efeaf7538834bd7cc120c3d7c110400a5789ca7855"},
-    {"path": "publication/v0.1/canonical-summary.json", "sha256": "17f08eeef7f093a008694e239128a8c416cb433626e5f88c4c04a8f5af809567"},
-    {"path": "web/replay/canonical-v1.json.gz", "sha256": "28953fe9cd7f6f1748a7471ea23dfa50df4b6993ce4cb51d32c12666bf12ec2e"},
-    {"path": "web/replay/canonical-v1.metadata.json", "sha256": "5bf051026187cfba3be6ebb25759a6d2fff9b98afb6f12dbf4bf484976c0d041"},
-    {"path": "web/replay/replay-v1.schema.json", "sha256": "988c8967e6005448e108dc7e9ca0bcc7c775e2c3e2dc953d472ba4e7d59ac051"},
-    {"path": "publication/v0.1/fallback/transcript.md", "sha256": "fdff0b9af3004bd4666adab87c2164c8482651c4beba2ad53e2a4b8384ab8b09"},
-    {"path": "publication/v0.1/fallback/cash-flow-balance-sheet.svg", "sha256": "91b48d7f23bba57aca0e4ce90bb2bdff4d82c8978eb8554d5605bcd8b8d59789"},
-    {"path": "publication/v0.1/fallback/scene-01.png", "sha256": "24cf4d0fe7ef2e40fec2f66ca347cc513ae9a30160029c35ffe0a08c0769e7e2"},
-    {"path": "publication/v0.1/fallback/scene-02.png", "sha256": "9a084a56682322c968e8001f756036fdf8d17a09ffa5f55a4824f31e58a2763f"},
-    {"path": "publication/v0.1/fallback/scene-03.png", "sha256": "1c18b220433245ccc854c0357e2a55336867ab004eb203fc6f0d20fb3b5f2ec9"},
-    {"path": "publication/v0.1/fallback/scene-04.png", "sha256": "4491fe28716acb409e81f28435a4527a0aee22b0c7be242d1979f30c42a35d16"},
-    {"path": "publication/v0.1/fallback/scene-05.png", "sha256": "d285de6dc4cfe5127e6a4d073be287ceeaff5f4c1f1abca574e9c930e3459de9"},
-    {"path": "publication/v0.1/fallback/scene-06.png", "sha256": "07deafde4ab98a9216da66c62162ffd767ff9a17aeb94c26b26b8190b338402d"},
-    {"path": "publication/v0.1/fallback/canonical-story.webm", "sha256": "227fa020928633680fcda5d919a5377a83dab1a51805e93baad930716e32cf29"}
+    {
+      "path": "tests/fixtures/phase10_report_config.json",
+      "sha256": "3c22ef3f58dfdf9ba30f314d1f567111e64999d623721338c21524a5b2471cbd"
+    },
+    {
+      "path": "publication/v0.1/canonical-config.json",
+      "sha256": "3536fa506abbd993198340b7cb39e67a11d7e522029b5d274f1ad5ed50fe08a3"
+    },
+    {
+      "path": "publication/v0.1/canonical-summary.json",
+      "sha256": "b8ebb6e20dc64bebbbbc12abfd763c8f1472d3a4a05a1467e3db8af30b2977b0"
+    },
+    {
+      "path": "web/replay/canonical-v1.json.gz",
+      "sha256": "23f9c2ccff36ca11666bb10d74fb8469a448bd633357666bc4c7ed116a83d3ba"
+    },
+    {
+      "path": "web/replay/canonical-v1.metadata.json",
+      "sha256": "b8f8098df518a8075b2c3ea00efb9ec938ab64a365bf8675a9f58a1f71487234"
+    },
+    {
+      "path": "web/replay/replay-v1.schema.json",
+      "sha256": "54a851153f3db3ec7f5e369e0895ef2c8b6fc509616ad04aef06d76f84cd3678"
+    },
+    {
+      "path": "publication/v0.1/fallback/transcript.md",
+      "sha256": "590c6636992f00bb0eafd2925e832269413a7f6a2a0fcede226bf9c9db0c6b58"
+    },
+    {
+      "path": "publication/v0.1/fallback/cash-flow-balance-sheet.svg",
+      "sha256": "e995afbefd67a463ca8888f3eb1e9fe589306a687c4a1076c7ce479eb3fb31bb"
+    },
+    {
+      "path": "publication/v0.1/fallback/scene-01.png",
+      "sha256": "e075272ac5a0ac60bc31fc8ebb0487ff94730564b664da54ace74c2ea1434507"
+    },
+    {
+      "path": "publication/v0.1/fallback/scene-02.png",
+      "sha256": "7afdbaae9b51b0b3a4c0fd17ece2281a30c1e8feb03b2a212293afa0c00e604a"
+    },
+    {
+      "path": "publication/v0.1/fallback/scene-03.png",
+      "sha256": "696270b1f17162b3dbff96939243fc9645ce94764af87dae420d7a31b79c8cee"
+    },
+    {
+      "path": "publication/v0.1/fallback/scene-04.png",
+      "sha256": "e659efbee207fcb0fbf45876eeca0ef9267cfc2002eaa4ceb09726b536adfdb3"
+    },
+    {
+      "path": "publication/v0.1/fallback/scene-05.png",
+      "sha256": "5bae0a484fca4e001bc6501b4392ff79b1a5e7efe476b33bdc455a3a43bdecf5"
+    },
+    {
+      "path": "publication/v0.1/fallback/scene-06.png",
+      "sha256": "2aebd1bb6e47fc3fffc180c2155333bff6ee7d1b23f0aeca512788da70f2fa25"
+    },
+    {
+      "path": "publication/v0.1/fallback/canonical-story.webm",
+      "sha256": "950a09908402c0aad00eaec5631a607177171215ae41c33f74ce196aa774cbef"
+    },
+    {
+      "path": "docs/demand-correction.md",
+      "sha256": "2f4af0d89ac616e68d30bf158ec189297ff26698c8937b06dc6ed2fe9e6afdfd"
+    }
   ],
   "calibration_status": "stylized mechanism calibration",
-  "release": "0.1.0",
-  "replay_schema": 1
+  "release": "0.1.1",
+  "replay_schema": 1,
+  "model_source_commit": "working-tree-demand-correction"
 }

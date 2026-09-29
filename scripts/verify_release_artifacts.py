@@ -49,6 +49,8 @@ def main() -> None:
     replay = ReplayBundleV1.model_validate_json(gzip.decompress(replay_path.read_bytes()))
     if replay.manifest.model_version != __version__:
         raise SystemExit("canonical replay model version does not match the release")
+    if replay.manifest.git_commit != manifest["model_source_commit"]:
+        raise SystemExit("canonical replay source commit does not match the release")
     if replay.manifest.scenario_id != "canonical-replay-v1":
         raise SystemExit("canonical replay scenario identity drifted")
     if not replay.scenario_pairing.shared_initialization:

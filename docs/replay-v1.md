@@ -44,8 +44,9 @@ nominal run followed by the indexed run.
 equity, and physical inventory. It includes households, firms, banks, government, central bank,
 and foreign sector every month. `sector_flows` contains regime/month, typed flow, source and target
 sectors, exact `amount_isk`, and its `ledger_entry_id`. Supported recorded flows are wages,
-consumption, imports, mortgage interest, principal payment, and bank dividends. Taxes, transfers,
-and new credit are omitted because v0.1 does not model those flows; omission is not a zero value.
+consumption, imports, exports, foreign settlement credit, mortgage interest, principal payment,
+and collected-interest bank dividends. Taxes, transfers, and new domestic loans are omitted;
+omission is not a zero value. Household real consumption excludes export sales.
 
 `events` contains a globally unique `id`, regime/month, an explicit economic `event_type`, optional
 amount and unit, and authoritative `source_id`. Types are `FX_SHOCK`, `FOREIGN_PRICE_SHOCK`,
@@ -84,9 +85,17 @@ entries once before applying monthly postings. Independent full-journal tests no
 positions at every month; export and browser validation also reconcile bank equity and household
 mortgage liabilities with analytical series. Incorrect earlier bundles fail validation.
 
-Corrected bundle IDs carry `-stocks-1`, and simulation-service cache keys include the export
+The initial corrected bundle IDs carried `-stocks-1`, and simulation-service cache keys include the export
 revision, so old immutable results are not reused. Aggregate trajectories, representative tracks,
 distributions, flows, events, seeds, configuration, and the economic transition rules are unchanged.
 The manifest's source commit continues to identify the original economic model; the Phase 18 commit
 identifies this presentation correction. The canonical checksums and recorded fallback views are
 refreshed; the existing release tag is not moved.
+
+## Demand correction (model 0.1.1)
+
+The current `demand-2` revision adds export and external-financing flows, collected-interest
+rather than accrued-interest dividends, and `real_consumption`/`exports` aggregate series.
+Consumption excludes exports; total sales include them. The model now allows consumption from
+net cash income and savings and declares fixed nominal foreign demand. Economic series are
+regenerated, not preserved from the unstable experiment. See [the correction record](demand-correction.md).

@@ -1,7 +1,10 @@
 from ecodeling.config.schema import (
+    ForeignSectorConfig,
     MicroSimulationConfig,
     ModelConfig,
     RealEconomyConfig,
+    ShockConfig,
+    ShockKind,
     SimulationConfig,
 )
 from ecodeling.economy import run_economy_simulation
@@ -36,10 +39,124 @@ def test_staged_markets_conserve_goods_and_money() -> None:
         assert aggregate.household_consumption == sum(
             row.consumption_expenditure for row in households
         )
-        assert aggregate.household_consumption == aggregate.firm_revenue
+        assert aggregate.household_consumption + aggregate.export_revenue == aggregate.firm_revenue
         assert aggregate.firm_revenue == sum(row.revenue for row in firms)
         assert all(row.consumption_expenditure <= row.consumption_budget for row in households)
+        assert aggregate.sales_units == (
+            sum(row.consumption_units for row in households) + aggregate.export_units
+        )
     result.ledger.assert_accounting_invariants()
+
+
+def test_export_goods_cash_and_bank_dividends_reconcile_to_the_journal() -> None:
+    config = _config(months=18).model_copy(
+        update={
+            "foreign_sector": ForeignSectorConfig(import_share_bps=2_500),
+        }
+    )
+    result = run_economy_simulation(config)
+    entries = {str(entry.id): entry for entry in result.ledger.entries}
+    for aggregate in result.aggregate_months:
+        households = [row for row in result.household_months if row.month == aggregate.month]
+        assert aggregate.household_consumption + aggregate.export_revenue == aggregate.firm_revenue
+        assert aggregate.sales_units == (
+            sum(row.consumption_units for row in households) + aggregate.export_units
+        )
+        assert aggregate.bank_dividends == sum(row.bank_dividend for row in households)
+        assert aggregate.bank_dividends == sum(
+            min(row.actual_mortgage_payment, row.mortgage_interest) for row in households
+        )
+        assert 0 < aggregate.export_revenue <= 6_000_000
+        entry = entries[f"economy:{aggregate.month}:exports"]
+        assert (
+            sum(
+                p.amount
+                for p in entry.postings
+                if str(p.account_id).startswith("firm-") and str(p.account_id).endswith(":deposit")
+            )
+            == aggregate.export_revenue
+        )
+        assert (
+            sum(
+                p.amount
+                for p in entry.postings
+                if str(p.account_id) == "economy-external-sector:deposit"
+            )
+            == -aggregate.export_revenue
+        )
+    result.ledger.assert_accounting_invariants()
+
+
+def test_export_budget_does_not_automatically_offset_an_import_price_shock() -> None:
+    base = _config(months=8).model_copy(
+        update={
+            "foreign_sector": ForeignSectorConfig(import_share_bps=2_500),
+        }
+    )
+    shocked = run_economy_simulation(
+        base.model_copy(
+            update={
+                "shock": ShockConfig(kind=ShockKind.FX_DEPRECIATION, month=2, magnitude=0.5),
+            }
+        )
+    )
+    baseline = run_economy_simulation(base)
+    assert {
+        row.export_demand for row in (*baseline.aggregate_months, *shocked.aggregate_months)
+    } == {6_000_000}
+    assert shocked.aggregate_months[-1].cpi_level > baseline.aggregate_months[-1].cpi_level
+    assert sum(row.consumption_units for row in shocked.household_months) < sum(
+        row.consumption_units for row in baseline.household_months
+    )
+
+
+def test_export_settlement_financing_has_exact_mirrored_claims() -> None:
+    base = _config(months=2)
+    result = run_economy_simulation(
+        base.model_copy(
+            update={
+                "real_economy": base.real_economy.model_copy(
+                    update={"consumption_propensity_bps": 0}
+                ),
+                "foreign_sector": ForeignSectorConfig(
+                    import_share_bps=2_500, monthly_export_demand_isk=12_000_000
+                ),
+            }
+        )
+    )
+    assert sum(row.external_financing for row in result.aggregate_months) > 0
+    entries = {str(entry.id): entry for entry in result.ledger.entries}
+    for row in result.aggregate_months:
+        if row.external_financing:
+            funding = entries[f"economy:{row.month}:export-funding"]
+            assert {str(p.account_id): p.amount for p in funding.postings} == {
+                "economy-clearing-bank:external-settlement": row.external_financing,
+                "economy-external-sector:settlement-liability": row.external_financing,
+                "economy-external-sector:deposit": row.external_financing,
+                "economy-clearing-bank:economy-external-sector:deposit": row.external_financing,
+            }
+    result.ledger.assert_accounting_invariants()
+
+
+def test_uncollected_interest_is_not_paid_out_as_dividends() -> None:
+    base = _config(months=24)
+    result = run_economy_simulation(
+        base.model_copy(
+            update={
+                "micro": base.micro.model_copy(update={"mortgage_term_months": 12}),
+                "foreign_sector": ForeignSectorConfig(
+                    import_share_bps=2_500, monthly_export_demand_isk=0
+                ),
+            }
+        )
+    )
+    assert any(row.bank_dividends < row.mortgage_interest for row in result.aggregate_months)
+    for aggregate in result.aggregate_months:
+        assert aggregate.bank_dividends == sum(
+            min(row.actual_mortgage_payment, row.mortgage_interest)
+            for row in result.household_months
+            if row.month == aggregate.month
+        )
 
 
 def test_named_matching_streams_make_complete_run_reproducible() -> None:

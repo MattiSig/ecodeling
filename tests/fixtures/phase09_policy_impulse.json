@@ -7,13 +7,13 @@
   "nominal": {
     "policy_rate_bps": 818,
     "mortgage_rate_bps": 1250,
-    "mortgage_interest": 4885844,
+    "mortgage_interest": 8768097,
     "principal_revaluation": 0
   },
   "indexed": {
     "policy_rate_bps": 818,
     "mortgage_rate_bps": 500,
-    "mortgage_interest": 2307969,
+    "mortgage_interest": 3570420,
     "impact_month": "2025-06",
     "impact_principal_revaluation": 5613640
   }

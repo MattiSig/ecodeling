@@ -119,6 +119,23 @@ def _baseline_import_cost(labor_unit_cost: ISK, import_share_bps: int) -> ISK:
     return _round_ratio(labor_unit_cost * import_share_bps, _BPS - import_share_bps)
 
 
+def consumption_budget(
+    *,
+    opening_deposits: ISK,
+    available_cash: ISK,
+    disposable_income: ISK,
+    income_propensity_bps: int,
+    wealth_propensity_bps: int,
+) -> ISK:
+    """Spend from net cash income and opening savings, subject to remaining cash."""
+    desired = _round_ratio(
+        max(0, disposable_income) * income_propensity_bps
+        + opening_deposits * wealth_propensity_bps,
+        _BPS,
+    )
+    return max(0, min(available_cash, desired))
+
+
 def _foreign_path(config: ModelConfig, offset: int) -> tuple[int, int, int]:
     foreign = config.foreign_sector
     exchange_rate = foreign.baseline_exchange_rate_index
@@ -527,6 +544,12 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         for household in households
     }
     full_employment_units = len(households) * economy.productivity_units_per_worker
+    export_budget = config.foreign_sector.monthly_export_demand_isk
+    if export_budget is None:
+        export_budget = full_employment_units * _baseline_import_cost(
+            _round_ratio(economy.monthly_wage_isk, economy.productivity_units_per_worker),
+            config.foreign_sector.import_share_bps,
+        )
     expected_per_firm = _ceil_ratio(full_employment_units, len(firms))
     firm_states = {
         firm.id: _FirmState(
@@ -727,6 +750,9 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 household_states[household_id].employer_id = firm.id
 
         # 3. Wages settle through mirrored bank-deposit claims.
+        opening_household_deposits = {
+            household.id: household_states[household.id].deposits for household in households
+        }
         wage_transfers: list[tuple[AgentId, AgentId, ISK]] = []
         wages: dict[AgentId, int] = {household.id: 0 for household in households}
         wage_bills: dict[AgentId, int] = {}
@@ -819,6 +845,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         mortgage_values: dict[AgentId, tuple[int, int, int, int, int, bool]] = {}
         total_bank_revaluation = 0
         total_bank_interest = 0
+        total_cash_interest = 0
         total_bank_losses = 0
         mortgage_rates: dict[AgentId, int] = {}
         for household in households:
@@ -856,6 +883,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 total_bank_revaluation += revaluation
             actual_payment = min(household_state.deposits, calculated.scheduled_payment)
             interest_paid = min(actual_payment, calculated.interest)
+            total_cash_interest += interest_paid
             principal_paid = max(0, actual_payment - calculated.interest)
             unpaid_interest = calculated.interest - interest_paid
             mortgage_change = -principal_paid + unpaid_interest
@@ -953,16 +981,19 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 )
             )
 
-        # The stylized bank distributes current mortgage interest as household
+        # The stylized bank distributes collected mortgage interest as household
         # dividends. This closes the otherwise omitted bank-income circuit while
         # retaining principal repayment, revaluation, arrears, and losses on its
         # balance sheet. Distribution is deterministic and independent of regime.
-        if total_bank_interest:
-            dividend, remainder = divmod(total_bank_interest, len(households))
-            dividend_postings: list[Posting] = [Posting(_equity(_BANK_ID), -total_bank_interest)]
+        # Capitalized arrears are not cash income available for distribution.
+        bank_dividends = {household.id: 0 for household in households}
+        if total_cash_interest:
+            dividend, remainder = divmod(total_cash_interest, len(households))
+            dividend_postings: list[Posting] = [Posting(_equity(_BANK_ID), -total_cash_interest)]
             for index, household in enumerate(households):
                 amount = dividend + (index < remainder)
                 if amount:
+                    bank_dividends[household.id] = amount
                     household_states[household.id].deposits += amount
                     dividend_postings.extend(
                         (
@@ -975,7 +1006,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 TransactionEntry(
                     LedgerEntryId(f"economy:{month}:bank-dividends"),
                     month,
-                    "Distribution of current mortgage interest income",
+                    "Distribution of collected mortgage interest income",
                     tuple(dividend_postings),
                 )
             )
@@ -983,9 +1014,16 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         # 8. Randomized search plans purchases against a provisional inventory snapshot.
         # Firm state is mutated only after the complete allocation plan exists.
         budgets = {
-            household.id: min(
-                household_states[household.id].deposits,
-                _round_ratio(wages[household.id] * economy.consumption_propensity_bps, _BPS),
+            household.id: consumption_budget(
+                opening_deposits=opening_household_deposits[household.id],
+                available_cash=household_states[household.id].deposits,
+                disposable_income=(
+                    wages[household.id]
+                    + bank_dividends[household.id]
+                    - mortgage_values[household.id][1]
+                ),
+                income_propensity_bps=economy.consumption_propensity_bps,
+                wealth_propensity_bps=economy.wealth_consumption_bps,
             )
             for household in households
         }
@@ -1022,6 +1060,48 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
             expenditures[household_id] += expenditure
             firm_sales[firm_id] += units
             revenues[firm_id] += expenditure
+        # Foreign buyers purchase remaining goods with a fixed nominal budget.
+        # Calibrate it once at initialization, never to current imports, debt,
+        # employment, or the loan regime. Domestic consumers have priority.
+        remaining_export_budget = export_budget
+        export_transfers: list[tuple[AgentId, AgentId, ISK]] = []
+        export_units = 0
+        for firm in sorted(firms, key=lambda item: (prices[item.id], str(item.id))):
+            units = min(remaining_inventory[firm.id], remaining_export_budget // prices[firm.id])
+            expenditure = units * prices[firm.id]
+            if expenditure:
+                remaining_inventory[firm.id] -= units
+                firm_sales[firm.id] += units
+                revenues[firm.id] += expenditure
+                export_units += units
+                remaining_export_budget -= expenditure
+                export_transfers.append((_EXTERNAL_ID, firm.id, expenditure))
+        export_revenue = export_budget - remaining_export_budget
+        # Foreign settlement uses accumulated import receipts first. Any shortfall
+        # creates a mirrored external settlement claim, not unrecorded free cash.
+        funding = max(0, export_revenue - ledger.balance(_deposit_asset(_EXTERNAL_ID)))
+        if funding:
+            ledger.post(
+                TransactionEntry(
+                    LedgerEntryId(f"economy:{month}:export-funding"),
+                    month,
+                    "Foreign buyers finance exports through external settlement claims",
+                    (
+                        Posting(_reserve(), funding),
+                        Posting(_external_liability(), funding),
+                        Posting(_deposit_asset(_EXTERNAL_ID), funding),
+                        Posting(_deposit_liability(_EXTERNAL_ID), funding),
+                    ),
+                )
+            )
+        export_entry = _transfer_entry(
+            LedgerEntryId(f"economy:{month}:exports"),
+            month,
+            "Foreign purchases of domestic goods",
+            tuple(export_transfers),
+        )
+        if export_entry is not None:
+            ledger.post(export_entry)
         for firm in firms:
             firm_states[firm.id].inventory = remaining_inventory[firm.id]
         for household in households:
@@ -1047,11 +1127,12 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 _BPS,
             )
         total_sales = sum(firm_sales.values())
-        if total_sales:
-            transaction_price_sum = sum(prices[firm.id] * firm_sales[firm.id] for firm in firms)
+        household_sales = sum(allocated_units.values())
+        if household_sales:
+            transaction_price_sum = sum(expenditures.values())
             cpi = _round_ratio(
                 transaction_price_sum * len(firms) * _PRICE_BASE,
-                total_sales * base_price_sum,
+                household_sales * base_price_sum,
             )
         else:
             cpi = _round_ratio(sum(prices.values()) * _PRICE_BASE, base_price_sum)
@@ -1115,6 +1196,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                     household_state.arrears_months,
                     defaulted_now,
                     mortgage_rates[household.id],
+                    bank_dividends[household.id],
                 )
             )
         for firm in firms:
@@ -1193,6 +1275,11 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
             deposit_rate_bps,
             bank_funding_rate_bps,
             total_bank_interest,
+            total_cash_interest,
+            export_revenue,
+            export_units,
+            export_budget,
+            funding,
         )
         aggregate_outputs.append(aggregate)
         if revaluation_entry is not None:

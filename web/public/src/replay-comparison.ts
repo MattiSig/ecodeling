@@ -14,6 +14,8 @@ export const COMPARISON_METRICS: readonly ComparisonMetric[] = [
   { name: "mortgage_principal", label: "Mortgage principal" },
   { name: "debt_service", label: "Debt service" },
   { name: "consumption", label: "Consumption" },
+  { name: "real_consumption", label: "Goods consumed" },
+  { name: "employment", label: "Employment" },
   { name: "defaults", label: "Defaults" },
   { name: "bank_equity", label: "Bank equity" },
 ] as const;

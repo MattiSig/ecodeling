@@ -231,7 +231,7 @@ def _derived_month_rows(
                 "median_mortgage_principal_isk": round(statistics.median(principals))
                 if principals
                 else 0,
-                "aggregate_real_consumption_units": aggregate.sales_units,
+                "aggregate_real_consumption_units": aggregate.sales_units - aggregate.export_units,
                 "household_deposits_isk": total_deposits,
                 "household_net_worth_isk": total_net_worth,
                 "debt_service_to_income": aggregate.debt_service / total_income

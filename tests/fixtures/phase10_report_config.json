@@ -37,12 +37,14 @@
     "firing_adjustment_bps": 2500,
     "consumption_propensity_bps": 10000,
     "opening_household_deposits_isk": 450000,
-    "firm_cash_buffer_months": 48
+    "firm_cash_buffer_months": 48,
+    "wealth_consumption_bps": 500
   },
   "foreign_sector": {
     "baseline_exchange_rate_index": 100000,
     "baseline_foreign_price_index": 100000,
-    "import_share_bps": 2500
+    "import_share_bps": 2500,
+    "monthly_export_demand_isk": null
   },
   "monetary_policy": {
     "inflation_target_annual": 0.025,

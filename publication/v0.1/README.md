@@ -9,9 +9,9 @@ outputs can be regenerated from the checked configuration rather than duplicated
 
 | Field | Published value |
 |---|---|
-| Model version | `0.1.0` |
+| Model version | `0.1.1` |
 | Replay schema | `1` |
-| Canonical source commit | `e9da824ebad39679ceabe0ad3825f3a247618acb` |
+| Canonical source commit | see `manifest.json` → `model_source_commit` |
 | Release baseline | `e20ea49919863af2dd6d8e6dc7fee0a10b59c95a` |
 | Configuration | [`canonical-config.json`](canonical-config.json) |
 | Seed | `1010` |
@@ -20,10 +20,10 @@ outputs can be regenerated from the checked configuration rather than duplicated
 | Calibration status | stylized mechanism calibration, not an empirical Iceland forecast |
 | Primary sources | [`docs/release-v0.1.md`](../../docs/release-v0.1.md#empirical-source-audit) |
 
-The replay's source commit identifies the model implementation on which the immutable canonical
-run was first established. The v0.1 release commit adds publication evidence and does not alter
-economic transition rules. Regenerating the replay at v0.1 changes its declared model version but
-not its economic series.
+The manifest pins the source commit for the corrected model. Model 0.1.1 replaces the earlier
+structurally unstable experiment; its economic series have changed. See the
+[demand correction](../../docs/demand-correction.md) for the rules, stability gates, and revised
+interpretation. Regenerate summary values with `uv run python scripts/generate_publication_summary.py`.
 
 ## Published artifacts
 
@@ -55,3 +55,6 @@ positions in sector stocks (`stocks-1` export revision). The original tagged rel
 from snapshots. Aggregate economic results and the transcript are unchanged. See the
 [correction record](../../docs/replay-v1.md#opening-stock-correction-phase-18); the manifest here
 pins the corrected artifacts without moving the historical tag.
+
+Model 0.1.1 supersedes the preceding Phase 18 economic values with export demand and corrected
+household consumption (`demand-2`). The opening-stock correction remains in force.

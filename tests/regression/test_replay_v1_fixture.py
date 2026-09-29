@@ -13,8 +13,6 @@ from ecodeling.reporting import (
     serialize_replay_v1,
 )
 
-BASELINE_COMMIT = "e9da824ebad39679ceabe0ad3825f3a247618acb"
-
 
 def test_canonical_replay_v1_fixture_matches_export() -> None:
     source = load_config(Path("tests/fixtures/phase10_report_config.json"))
@@ -24,7 +22,9 @@ def test_canonical_replay_v1_fixture_matches_export() -> None:
     artifact = serialize_replay_v1(
         export_replay_v1(
             run_endogenous_indexation_comparison(config),
-            git_commit=BASELINE_COMMIT,
+            git_commit=json.loads(Path("publication/v0.1/manifest.json").read_text())[
+                "model_source_commit"
+            ],
         )
     )
     fixture = Path("web/replay/canonical-v1.json.gz").read_bytes()

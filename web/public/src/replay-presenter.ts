@@ -34,6 +34,8 @@ export const FLOW_LABELS: Record<string, string> = {
   wages: "Wages",
   consumption: "Consumption",
   imports: "Imports",
+  exports: "Exports",
+  external_financing: "Foreign settlement credit",
   interest: "Interest",
   principal_payment: "Principal payment",
   bank_dividend: "Bank dividend",

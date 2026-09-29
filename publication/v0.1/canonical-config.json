@@ -3,9 +3,15 @@
   "simulation": {
     "months": 18,
     "seed": 1010,
-    "start_month": {"year": 2025, "month": 1}
+    "start_month": {
+      "year": 2025,
+      "month": 1
+    }
   },
-  "indexation": {"mortgage_alpha": 1.0, "lag_months": 1},
+  "indexation": {
+    "mortgage_alpha": 1.0,
+    "lag_months": 1
+  },
   "micro": {
     "households": 20,
     "banks": 1,
@@ -30,13 +36,15 @@
     "inventory_target_bps": 1000,
     "firing_adjustment_bps": 2500,
     "consumption_propensity_bps": 10000,
+    "wealth_consumption_bps": 500,
     "opening_household_deposits_isk": 450000,
     "firm_cash_buffer_months": 48
   },
   "foreign_sector": {
     "baseline_exchange_rate_index": 100000,
     "baseline_foreign_price_index": 100000,
-    "import_share_bps": 2500
+    "import_share_bps": 2500,
+    "monthly_export_demand_isk": null
   },
   "monetary_policy": {
     "inflation_target_annual": 0.025,

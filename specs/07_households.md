@@ -26,6 +26,12 @@ C^{planned}_{i,t}=\max(0,\min(C^{desired}_{i,t},\ available\ cash_i))
 
 Actual consumption may be lower if goods are rationed.
 
+Implemented v0.1.1 calibration: `c_0 = 0`, `c_y = 1`, and monthly `c_w = 0.05`.
+Use nonnegative current disposable cash income (wages plus collected bank dividends minus
+actual mortgage payments) and opening deposits for the liquid-wealth term. Remaining deposits
+after payments and dividends impose the liquidity bound. See
+[`docs/demand-correction.md`](../docs/demand-correction.md) for the closure and validation limits.
+
 ## Heterogeneous marginal propensity to consume
 
 Lower-liquidity households should generally have higher income sensitivity than wealthy households. V0.1 can assign household groups rather than estimate a continuous behavioral equation.

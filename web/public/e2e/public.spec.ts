@@ -206,7 +206,10 @@ test("matches the deterministic economy-scene baseline", async ({ page }) => {
   await experience
     .getByRole("button", { name: "Imported inputs cost more" })
     .click();
-  await expect(experience.locator(".flow-layer line")).toHaveCount(6);
+  await expect(experience.locator(".flow-layer line")).toHaveCount(7);
+  await expect(
+    experience.locator(".flow-layer line").filter({ hasText: "Exports:" }),
+  ).toHaveCount(1);
   await expect(experience.locator(".flow-layer line").first()).toBeVisible();
   await expect(experience.locator(".stage")).toHaveScreenshot(
     "economy-scene.png",

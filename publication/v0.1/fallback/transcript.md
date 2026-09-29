@@ -13,9 +13,12 @@ experiment, not a forecast or an estimate of Iceland.
 5. Contract pricing differs by construction: the nominal coupon includes expected-inflation and
    risk-premium terms, while the indexed contract carries CPI changes in principal. Opening total
    debt service is therefore 2,560,911 ISK nominal and 1,604,555 ISK indexed.
-6. By the last canonical month, recorded mortgage principal is 105,935,043 ISK nominal and
-   175,997,237 ISK indexed. Consumption and bank equity also diverge through the recorded payment,
-   default, balance-sheet, and demand feedback rules.
+6. By the last canonical month, recorded mortgage principal is 452,338,298 ISK nominal and
+   460,211,944 ISK indexed. Consumption and bank equity also diverge through the recorded payment,
+   balance-sheet and demand feedback rules. Both regimes retain 20 jobs and record zero defaults.
+7. Total spending is 165,297,096 ISK nominal and 161,994,709 ISK indexed; real household purchases
+   are 108,377 and 106,212 units. The corrected model includes fixed nominal export demand and
+   consumption from disposable income and savings. See `docs/demand-correction.md`.
 
 These values describe one checked seed. Distributional claims require the paired Monte Carlo and
 sensitivity workflows; no single welfare score or causal empirical claim is attached to them.

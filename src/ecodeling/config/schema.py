@@ -73,6 +73,7 @@ class RealEconomyConfig(FrozenConfigModel):
     inventory_target_bps: Annotated[int, Field(ge=0, le=20_000)] = 1_000
     firing_adjustment_bps: Annotated[int, Field(ge=1, le=10_000)] = 2_500
     consumption_propensity_bps: Annotated[int, Field(ge=0, le=10_000)] = 10_000
+    wealth_consumption_bps: Annotated[int, Field(ge=0, le=10_000)] = 500
     opening_household_deposits_isk: Annotated[int, Field(ge=0)] = 450_000
     firm_cash_buffer_months: Annotated[int, Field(ge=1, le=1_200)] = 120
 
@@ -90,6 +91,9 @@ class ForeignSectorConfig(FrozenConfigModel):
     baseline_exchange_rate_index: Annotated[int, Field(ge=1)] = 100_000
     baseline_foreign_price_index: Annotated[int, Field(ge=1)] = 100_000
     import_share_bps: Annotated[int, Field(ge=0, lt=10_000)] = 0
+    # None calibrates a fixed nominal budget to full-employment opening import
+    # costs. Zero explicitly disables exports; neither choice tracks later shocks.
+    monthly_export_demand_isk: Annotated[int, Field(ge=0)] | None = None
 
 
 class MonetaryPolicyConfig(FrozenConfigModel):

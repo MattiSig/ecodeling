@@ -83,6 +83,8 @@ export function glossary() {
 }
 
 export const METRIC_GUIDES: Record<string, string> = {
+  real_consumption: "Physical goods purchased by households; excludes exports.",
+  employment: "Number of households receiving a wage this month.",
   cpi_level:
     "Consumer Price Index (CPI): simulated transaction prices, shown on an index with a base of 100. A rise means the same goods cost more; it is a price level, not an inflation rate.",
   policy_rate:

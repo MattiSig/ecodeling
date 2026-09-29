@@ -1,8 +1,8 @@
 {
-  "compressed_bytes": 24954,
+  "compressed_bytes": 24323,
   "content_encoding": "gzip",
   "content_type": "application/json",
   "schema_version": 1,
-  "sha256_uncompressed": "7cc73d4fb1cf109c3f574627655fb3f75def767522e144e19b2a08b906e88ccd",
-  "uncompressed_bytes": 294652
+  "sha256_uncompressed": "f21b4cb11d69096b5421b52528edc8b0fad1881887172b523b33ab4767e3692b",
+  "uncompressed_bytes": 298345
 }

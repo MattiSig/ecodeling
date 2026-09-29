@@ -8,6 +8,7 @@ import {
   articleClaims,
   evidenceValue,
   introduction,
+  periodTotal,
 } from "../src/reader-article.js";
 import { GLOSSARY, glossary } from "../src/reader-glossary.js";
 import { formatValue } from "../src/replay-presenter.js";
@@ -43,6 +44,29 @@ function renderArticle(
 }
 
 describe("reader evidence", () => {
+  it("sums full-period spending and defaults from the loaded replay", () => {
+    for (const metric of ["consumption", "defaults"]) {
+      for (const regime of ["nominal", "indexed"]) {
+        const expected = replay.aggregate_series
+          .find((s) => s.name === metric && s.regime === regime)!
+          .points.reduce((sum, p) => sum + p.value!, 0);
+        expect(periodTotal(replay, metric, regime)).toBe(expected);
+        expect(
+          renderArticle().querySelector("[data-period-summary]")?.textContent,
+        ).toContain(
+          formatValue(
+            expected,
+            metric === "consumption" ? "ISK" : "households",
+          ),
+        );
+      }
+    }
+    const changed = structuredClone(replay);
+    changed.aggregate_series.find(
+      (s) => s.name === "consumption" && s.regime === "nominal",
+    )!.points[0]!.value = null;
+    expect(periodTotal(changed, "consumption", "nominal")).toBeNull();
+  });
   it("orders the complete walkthrough and retains assumptions without replay loading", () => {
     const root = renderArticle();
     expect(

@@ -1,30 +1,30 @@
 {
   "indexed-baseline": {
-    "bank_equity": 198434704,
+    "bank_equity": 454290301,
     "cpi_level": 100000,
-    "debt_service": 528286,
-    "defaults": 2,
-    "mortgage_principal": 196034180
+    "debt_service": 1604555,
+    "defaults": 0,
+    "mortgage_principal": 449131855
   },
   "indexed-shock": {
-    "bank_equity": 178398180,
+    "bank_equity": 465444486,
     "cpi_level": 102467,
-    "debt_service": 668128,
-    "defaults": 1,
-    "mortgage_principal": 175997237
+    "debt_service": 1644138,
+    "defaults": 0,
+    "mortgage_principal": 460211944
   },
   "nominal-baseline": {
-    "bank_equity": 147211673,
+    "bank_equity": 454290301,
     "cpi_level": 100000,
-    "debt_service": 301555,
+    "debt_service": 1287856,
     "defaults": 0,
-    "mortgage_principal": 148683750
+    "mortgage_principal": 451465496
   },
   "nominal-shock": {
-    "bank_equity": 102776066,
+    "bank_equity": 454290301,
     "cpi_level": 102467,
-    "debt_service": 205414,
-    "defaults": 1,
-    "mortgage_principal": 105935043
+    "debt_service": 2258168,
+    "defaults": 0,
+    "mortgage_principal": 452338298
   }
 }

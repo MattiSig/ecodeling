@@ -69,3 +69,7 @@ Phase 18 adds a replay export revision to optional-service cache identity. Corre
 bundles include opening ledger positions; earlier cached artifacts remain immutable but are not
 selected for new requests. Deploy the corrected component and replay together through the normal
 checksummed handoff: its reader rejects sector stocks inconsistent with analytical series.
+
+Model 0.1.1 uses `demand-2` and a new model version as well as new configuration hashes. Publish
+JavaScript and replay together: the additional export/financing flow types need the corresponding
+browser labels. The corrected replay replaces the earlier structurally unstable experiment.

@@ -68,8 +68,9 @@ export function introduction() {
       <p>
         The six sectors are households (work and spend), firms (hire and sell),
         banks (hold loans and deposits), government, the central bank (sets the
-        policy rate), and the foreign sector (supplies imports). Government and
-        central-bank balance-sheet values are unavailable, not zero.
+        policy rate), and the foreign sector (supplies imports and buys
+        exports). Government and central-bank balance-sheet values are
+        unavailable, not zero.
       </p>
       <p>
         Stocks are balances at month end: debt, deposits, and equity. Flows are
@@ -120,6 +121,8 @@ export function articleClaims(replay: ReplayBundleV1) {
     "mortgage_principal",
     "debt_service",
     "consumption",
+    "real_consumption",
+    "employment",
     "defaults",
     "bank_equity",
   ].flatMap((metric) => {
@@ -137,6 +140,17 @@ export function evidenceValue(value: number | null, unit: string) {
   return unit === "index" && value !== null
     ? `${formatValue(value, unit)} index (base 100)`
     : formatValue(value, unit);
+}
+export function periodTotal(
+  replay: ReplayBundleV1,
+  metric: string,
+  regime: string,
+) {
+  const series = replay.aggregate_series.find(
+    (s) => s.name === metric && s.regime === regime,
+  );
+  if (!series || series.points.some((p) => p.value === null)) return null;
+  return series.points.reduce((sum, p) => sum + p.value!, 0);
 }
 function direction(value: number | null) {
   return value === null
@@ -250,6 +264,26 @@ export function article(
         Named streams and common initialization are checked when loading this
         replay.
       </p>
+      <p>
+        Spending assumptions: households consume from income after mortgage
+        payments, collected bank dividends, and a share of opening savings.
+        Losing a wage no longer forbids spending remaining savings. Foreign
+        buyers have a fixed nominal export budget, calibrated to opening import
+        costs. That budget does not rise automatically when the shock hits.
+        Exports use real goods and recorded payments; foreign settlement credit
+        finances any shortfall in accumulated import receipts.
+      </p>
+      ${replay.manifest.scenario_id === "canonical-replay-v1"
+        ? html`<p>
+            Model correction: the earlier replay collapsed even without a shock.
+            It omitted export demand and prevented households from drawing
+            savings after losing wages. This version corrects those rules.
+            No-shock checks over 120 months keep employment stable with zero
+            defaults across three seeds and in a separate 200-household economy.
+            These are validation checks of this calibration, not a guarantee for
+            every experiment.
+          </p>`
+        : nothing}
       ${action("View in Story", { mode: "story", month: first })}
     </section>
     <section id="article-shock">
@@ -447,6 +481,22 @@ export function article(
     </section>
     <section id="article-conclusion">
       <h2>Interpretation, limitations, and conclusion</h2>
+      <p data-period-summary>
+        Over the full replay, households spend
+        ${formatValue(periodTotal(replay, "consumption", "nominal"), "ISK")}
+        with nominal loans and
+        ${formatValue(periodTotal(replay, "consumption", "indexed"), "ISK")}
+        with indexed loans. Total defaults are
+        ${formatValue(periodTotal(replay, "defaults", "nominal"), "households")}
+        and
+        ${formatValue(
+          periodTotal(replay, "defaults", "indexed"),
+          "households",
+        )},
+        respectively. Compare employment and goods consumed below alongside the
+        payment and debt figures: lower initial payments alone do not establish
+        a better outcome for the economy.
+      </p>
       <p>
         Recorded simulated results: the table collects the opening and closing
         evidence for this paired run. Every difference is indexed minus the
@@ -507,16 +557,20 @@ export function article(
       <p>
         Interpretation: contract design shifts the timing and location of
         exposure. A smaller early cash burden can coexist with more debt later.
-        This conditional comparison does not identify real-world causal effects,
-        rank household welfare, or show that either regime is preferable.
+        Lower borrower payments need not mean higher economy-wide spending:
+        interest paid to the bank returns as household dividends, while
+        principal repayment reduces outstanding credit and deposits. This
+        conditional comparison does not identify real-world causal effects, rank
+        household welfare, or show that either regime is preferable.
       </p>
       <p>
         Limitations: one generic good; stylized firms and expectations;
         initialized housing values without a housing market; no refinancing,
         prepayment, or demographics; zero-recovery defaults; bank interest
-        returned to households; unavailable government and central-bank balance
-        sheets. A short path with one seed is not a measure of uncertainty or
-        long-run persistence.
+        collected and returned to households; fixed nominal export demand with
+        external settlement credit; unavailable government and central-bank
+        balance sheets. A short path with one seed is not a measure of
+        uncertainty or long-run persistence.
       </p>
       <p>
         Next experiment: repeat across seeds and contract lags, then investigate

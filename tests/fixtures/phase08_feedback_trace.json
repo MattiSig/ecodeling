@@ -12,10 +12,10 @@
   "previous_cpi_level": 100000,
   "mortgage_revaluation": 6009862,
   "scheduled_debt_service": 3213606,
-  "actual_debt_service": 3075614,
-  "consumption_expenditure": 11892908,
+  "actual_debt_service": 3213606,
+  "consumption_expenditure": 18102668,
   "bank_equity": 909835404,
-  "arrears_households": 3,
+  "arrears_households": 0,
   "defaults": 0,
   "revaluation_ledger_entry_id": "economy:2025-06:cpi-revaluation"
 }

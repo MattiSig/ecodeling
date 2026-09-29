@@ -100,6 +100,6 @@ V0.1 may allow loss-making firms to continue if cash remains positive. If firm e
 
 - an import price increase raises unit costs for firms with positive import share;
 - price response depends on the firm's pricing adjustment rule;
-- household purchases equal firm revenue;
+- household purchases plus export purchases equal firm revenue;
 - wages paid equal household wage income;
 - firm output cannot exceed defined technology/capacity without an explicit rule.

@@ -1,5 +1,6 @@
 """Regenerate the compact canonical replay-v0 browser fixture."""
 
+import json
 from pathlib import Path
 
 from ecodeling.config.schema import MicroSimulationConfig, ModelConfig, SimulationConfig
@@ -8,7 +9,6 @@ from ecodeling.micro import constant_external_paths, run_micro_simulation
 from ecodeling.micro.entities import MortgageRegime
 from ecodeling.reporting.replay import export_replay_v0
 
-BASELINE_COMMIT = "4e423f9a753d05da917e09414df2fab8a5824a91"
 OUTPUT = Path("web/internal-audit/replay-v0.json")
 
 
@@ -24,7 +24,12 @@ def main() -> None:
         constant_external_paths(config, annual_inflation_bps=600),
         MortgageRegime.INDEXED,
     )
-    replay = export_replay_v0(result, git_commit=BASELINE_COMMIT)
+    replay = export_replay_v0(
+        result,
+        git_commit=json.loads(Path("publication/v0.1/manifest.json").read_text())[
+            "model_source_commit"
+        ],
+    )
     OUTPUT.write_text(replay.canonical_json() + "\n", encoding="utf-8")
 
 

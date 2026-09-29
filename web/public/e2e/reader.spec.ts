@@ -165,7 +165,7 @@ test("static and failed replays keep the explanation accessible", async ({
       exact: true,
     }),
   ).toBeAttached();
-  await expect(page.locator("[data-claim]")).toHaveCount(12);
+  await expect(page.locator("[data-claim]")).toHaveCount(16);
   await component.evaluate((el) =>
     el.setAttribute("src", "/missing-replay.json"),
   );

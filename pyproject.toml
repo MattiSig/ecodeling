@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "ecodeling"
-version = "0.1.0"
+version = "0.1.1"
 description = "An educational agent-based model of CPI indexation"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -44,12 +44,14 @@ the declared structural difference. Nominal pricing includes expected inflation 
 risk premium; indexed pricing moves the realized CPI component into principal after the lag.
 
 The 18-month canonical run exists to explain the mechanism quickly. Its CPI ends at 102,467 in
-both regimes. Its final mortgage stocks are 105,935,043 ISK nominal and 175,997,237 ISK indexed;
+both regimes. Its final mortgage stocks are 452,338,298 ISK nominal and 460,211,944 ISK indexed;
 opening debt service is 2,560,911 ISK nominal and 1,604,555 ISK indexed. Under this model
 structure, parameterization, and seed, indexed debt carries less opening cash-flow burden and more
 closing principal. These are simulated outcomes, not estimates of household outcomes in Iceland.
 
-Long-run stability, accounting, and timing are tested separately with 600-month seeded runs.
+The actual canonical no-shock calibration now passes 120-month stability gates across three seeds
+and at 200-household scale. Separate 600-month runs check accounting and pairing, not universal
+economic stability. See [the model 0.1.1 correction](demand-correction.md).
 Distributional uncertainty and parameter dependence are exercised through the paired batch and
 sensitivity machinery; the checked canonical replay must not be interpreted as their substitute.
 
@@ -58,8 +60,9 @@ sensitivity machinery; the checked canonical replay must not be interpreted as t
 - The model has one generic consumer good and stylized firms, expectations, labor matching, and
   default. It omits endogenous housing transactions, refinancing, prepayment, demographics,
   detailed taxation, pension funds, and endogenous exchange-rate formation.
-- Housing value is initialized rather than generated in a housing market. Zero-recovery default
-  and returned bank-interest closure are transparent mechanism assumptions.
+- Housing value is initialized rather than generated in a housing market. Zero-recovery default, collected bank-interest dividends, consumption from disposable income
+  and savings, and fixed nominal export demand with external settlement credit are transparent
+  mechanism assumptions.
 - The production replay uses 20 households, four firms, and one clearing bank for compactness,
   while validation separately exercises the intended 1,000-household and two-bank scale.
 - The canonical 18-month path is too short for a general persistence or welfare conclusion.
@@ -82,7 +85,7 @@ recorded fallback for video channels: it preserves the event order without requi
 Measurements are taken on the release workstation with Chromium and Python 3.12 and are evidence,
 not cross-device guarantees. The release gate records:
 
-- canonical replay: 293,687 uncompressed bytes and approximately 24.7 KB gzip;
+- canonical replay: exact compressed and uncompressed sizes in `web/replay/canonical-v1.metadata.json`;
 - public component bundle: approximately 168 KB JavaScript and 36 bytes host CSS;
 - canonical Story/Explore/Compare is static-host playback and makes no simulation request;
 - custom API: 8 KiB request body, 6–60 months, 10–250 households, 2–50 firms, at most four worker

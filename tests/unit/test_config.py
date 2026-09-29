@@ -39,6 +39,14 @@ def test_default_configuration_is_frozen_and_complete() -> None:
             "shock.magnitude",
         ),
         ({"foreign_sector": {"import_share_bps": 10_000}}, "foreign_sector.import_share_bps"),
+        (
+            {"foreign_sector": {"monthly_export_demand_isk": -1}},
+            "foreign_sector.monthly_export_demand_isk",
+        ),
+        (
+            {"real_economy": {"wealth_consumption_bps": 10_001}},
+            "real_economy.wealth_consumption_bps",
+        ),
         ({"unknown": True}, "unknown"),
     ],
 )
@@ -90,7 +98,7 @@ def test_default_configuration_has_stable_canonical_identity() -> None:
     config = ModelConfig(scenario_id=ScenarioId("baseline"))
 
     assert config.configuration_hash() == (
-        "67b80b3ef366913fb2ad3edb9a75c09d1575903f026f1372ad4170f6ea3a79bb"
+        "5395d452bff5d27d1e2284cff760efbb98dd84dfe5dba98584d28a4a1572c25b"
     )
 
 

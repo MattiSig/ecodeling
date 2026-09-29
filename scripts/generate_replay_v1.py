@@ -7,7 +7,7 @@ from ecodeling.config.schema import ModelConfig
 from ecodeling.economy import run_endogenous_indexation_comparison
 from ecodeling.reporting import ReplayBundleV1, export_replay_v1, load_config, serialize_replay_v1
 
-BASELINE_COMMIT = "e9da824ebad39679ceabe0ad3825f3a247618acb"
+RELEASE_MANIFEST = Path("publication/v0.1/manifest.json")
 CONFIG = Path("tests/fixtures/phase10_report_config.json")
 OUTPUT = Path("web/replay/canonical-v1.json.gz")
 METADATA = Path("web/replay/canonical-v1.metadata.json")
@@ -22,7 +22,7 @@ def main() -> None:
     )
     bundle = export_replay_v1(
         run_endogenous_indexation_comparison(config),
-        git_commit=BASELINE_COMMIT,
+        git_commit=json.loads(RELEASE_MANIFEST.read_text())["model_source_commit"],
     )
     artifact = serialize_replay_v1(bundle)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

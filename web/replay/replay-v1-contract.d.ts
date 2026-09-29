@@ -59,6 +59,8 @@ export interface ReplayBundleV1 {
       | "wages"
       | "consumption"
       | "imports"
+      | "exports"
+      | "external_financing"
       | "interest"
       | "principal_payment"
       | "bank_dividend";

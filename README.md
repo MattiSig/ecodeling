@@ -2,6 +2,11 @@
 
 Ecodeling is a specification-first project for an educational agent-based model of CPI indexation in a small open economy inspired by Iceland.
 
+Model 0.1.1 corrects the earlier replay's structural demand collapse with explicit export demand
+and consumption from disposable income and savings. Read the
+[correction, assumptions, and revised results](docs/demand-correction.md). Stability is checked
+against the published calibration without the shock, across seeds and population sizes.
+
 The model is designed to explore how the breadth, symmetry, and location of indexation affect the propagation of inflation shocks through households, firms, banks, government, housing, and monetary policy.
 
 Read the [full specification and recommended reading order](specs/README.md).
@@ -313,7 +318,7 @@ produce subject to labor technology and capacity, and set cost-plus prices with 
 Households search suppliers using a separate seeded stream; purchases are planned against an
 inventory snapshot before settlement, so no registry-order mutation can claim goods early.
 
-Firm revenue equals household expenditure in the ledger, wage income equals firm payroll, and the
+Firm revenue equals household expenditure plus export receipts in the ledger, wage income equals firm payroll, and the
 physical identity `opening inventory + production = sales + closing inventory` is recorded for
 each firm and month. CPI is the sales-weighted price of actual consumer-good transactions,
 normalized to 100,000 at initialization; monthly and twelve-month inflation are derived from that

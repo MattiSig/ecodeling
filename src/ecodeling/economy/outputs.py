@@ -30,6 +30,7 @@ class HouseholdEconomyMonthlyOutput:
     arrears_months: int
     defaulted: bool
     mortgage_rate_bps: int
+    bank_dividend: ISK
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,6 +98,11 @@ class EconomyMonthlyOutput:
     deposit_rate_bps: int
     bank_funding_rate_bps: int
     mortgage_interest: ISK
+    bank_dividends: ISK
+    export_revenue: ISK
+    export_units: int
+    export_demand: ISK
+    external_financing: ISK
 
 
 @dataclass(frozen=True, slots=True)

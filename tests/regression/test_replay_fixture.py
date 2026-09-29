@@ -1,5 +1,6 @@
 """Canonical compact replay regression fixture."""
 
+import json
 from pathlib import Path
 
 from ecodeling.config.schema import MicroSimulationConfig, ModelConfig, SimulationConfig
@@ -20,7 +21,12 @@ def test_canonical_replay_fixture_matches_export() -> None:
         constant_external_paths(config, annual_inflation_bps=600),
         MortgageRegime.INDEXED,
     )
-    replay = export_replay_v0(result, git_commit="4e423f9a753d05da917e09414df2fab8a5824a91")
+    replay = export_replay_v0(
+        result,
+        git_commit=json.loads(Path("publication/v0.1/manifest.json").read_text())[
+            "model_source_commit"
+        ],
+    )
 
     fixture = Path("web/internal-audit/replay-v0.json")
     assert fixture.read_text(encoding="utf-8") == replay.canonical_json() + "\n"
