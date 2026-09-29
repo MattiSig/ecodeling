@@ -49,3 +49,9 @@ uv run ecodeling compare tests/fixtures/phase10_report_config.json \
 
 Run the release gate with `npm run release:verify`. Network-dependent Railway checks are listed in
 the operations runbook and are deliberately separate from the clean-checkout offline gate.
+
+Phase 18 correction: the current replay and recorded fallback views include opening ledger
+positions in sector stocks (`stocks-1` export revision). The original tagged release omitted them
+from snapshots. Aggregate economic results and the transcript are unchanged. See the
+[correction record](../../docs/replay-v1.md#opening-stock-correction-phase-18); the manifest here
+pins the corrected artifacts without moving the historical tag.

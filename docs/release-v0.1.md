@@ -118,3 +118,14 @@ and source commit are the same canonical run, while the v0.1 handoff changes the
 version and gzip checksum. Publishing the new handoff still requires an explicitly authorized CV
 commit/deploy. The release candidate was therefore also exported to a fresh directory, passed its
 own `SHA256SUMS`, and was exercised by the clean-copy production-like browser gate before tagging.
+
+## Phase 18 reader and snapshot correction
+
+The current component adds Article onboarding, a shared accessible glossary, replay-derived
+numerical evidence, and a conditional conclusion. During its balance-sheet review, an independent
+journal audit exposed an omission of opening entries in the original sector snapshot exporter.
+The `stocks-1` correction reconstructs complete positions and rejects mismatches with analytical
+bank equity and household mortgage liabilities. The model, aggregate trajectories, flows, events,
+distributions, and representative histories remain unchanged. Current checksums and recorded
+fallbacks reflect the correction; the historical release tag remains unchanged. This is a local
+verified handoff, not evidence that the new assets have been deployed to the live CV site.

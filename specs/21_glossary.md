@@ -115,3 +115,16 @@ Choosing model parameters so the model corresponds to selected empirical facts o
 ## Validation
 
 Checking code correctness, accounting consistency, behavioral plausibility, and empirical properties appropriate to the model's intended use.
+
+## FX — foreign exchange
+
+Exchange rates between currencies. This model quotes the rate as ISK per foreign-currency unit.
+
+## ISK — Icelandic króna
+
+Currency used for monetary accounting. Model outputs use nominal whole krónur.
+
+## IRF — impulse response function
+
+The path following a shock relative to a no-shock counterfactual. An indexed-minus-nominal regime
+difference alone is not an IRF.

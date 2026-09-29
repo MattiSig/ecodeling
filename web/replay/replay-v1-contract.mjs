@@ -104,5 +104,19 @@ export function validateReplayV1(bundle, byteLength) {
     }
     seriesKeys.set(key, series);
   }
+  for (const [metric, sector, field] of [
+    ["bank_equity", "banks", "equity_isk"],
+    ["mortgage_principal", "households", "liabilities_isk"],
+  ]) {
+    for (const series of bundle.aggregate_series.filter((item) => item.name === metric)) {
+      for (const point of series.points) {
+        const snapshot = bundle.sector_snapshots.find((item) =>
+          item.regime === series.regime && item.month === point.month && item.sector === sector);
+        if (!snapshot || snapshot[field] !== point.value) {
+          throw new ReplayCompatibilityError("Sector stocks do not reconcile with aggregate outputs. Regenerate the replay with opening ledger balances.");
+        }
+      }
+    }
+  }
   return bundle;
 }

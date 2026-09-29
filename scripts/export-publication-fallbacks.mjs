@@ -51,13 +51,14 @@ try {
     colorScheme: "dark",
   });
   const page = await context.newPage();
-  await page.goto(`${origin}/web/public/`, { waitUntil: "networkidle" });
+  await page.goto(`${origin}/web/public/?ecodeling-mode=story`, { waitUntil: "networkidle" });
   const experience = page.locator("ecodeling-experience");
   await experience.evaluate((element) => element.setAttribute("static", ""));
   const video = page.video();
 
   for (const [index, title] of scenes.entries()) {
     await experience.getByRole("button", { name: title }).click();
+    await experience.locator(".stage").scrollIntoViewIfNeeded();
     await experience.locator(".stage").screenshot({
       path: path.join(output, `scene-${String(index + 1).padStart(2, "0")}.png`),
       animations: "disabled",

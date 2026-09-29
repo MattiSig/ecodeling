@@ -13,7 +13,8 @@
     "release:verify": "bash scripts/verify-release.sh",
     "test": "node --test web/internal-audit/tests/*.test.mjs web/replay/tests/*.test.ts && vitest run --config web/public/vitest.config.ts",
     "test:browser": "playwright test --config web/public/playwright.config.ts",
-    "typecheck:web": "tsc --project web/public/tsconfig.json --noEmit"
+    "typecheck:web": "tsc --project web/public/tsconfig.json --noEmit",
+    "test:cv": "playwright test --config web/public/playwright.cv.config.ts"
   },
   "dependencies": {
     "d3": "7.9.0",

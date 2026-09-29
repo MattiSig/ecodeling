@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
   if (test.info().project.name === "reduced-motion") {
     await page.emulateMedia({ reducedMotion: "reduce" });
   }
-  await page.goto("/web/public/");
+  await page.goto("/web/public/?ecodeling-mode=story");
   await expect(page.locator("ecodeling-experience")).toHaveAttribute(
     "role",
     "region",
@@ -73,7 +73,7 @@ test("plays recorded months and preserves the month between modes", async ({
     .getByRole("button", { name: "The price index rewrites debt" })
     .click();
   await expect(range).toHaveValue("5");
-  await experience.getByRole("button", { name: "Explore" }).click();
+  await experience.getByRole("tab", { name: "Explore", exact: true }).click();
   await expect(range).toHaveValue("5");
   await experience.getByLabel("Playback speed").selectOption("2");
   await experience.getByRole("button", { name: "Play" }).click();
@@ -107,7 +107,7 @@ test("keeps paired playback, camera, selection, and charts synchronized", async 
   test.skip(testInfo.project.name !== "desktop", "desktop comparison trace");
   const experience = page.locator("ecodeling-experience");
   const range = experience.getByRole("slider", { name: "Simulation month" });
-  await experience.getByRole("button", { name: "Compare" }).click();
+  await experience.getByRole("tab", { name: "Compare", exact: true }).click();
   await expect(
     experience.getByRole("heading", {
       name: "One clock, two contract structures",
@@ -153,7 +153,7 @@ test("keeps Compare mode accessible and contained on narrow screens", async ({
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "mobile comparison audit");
   const experience = page.locator("ecodeling-experience");
-  await experience.getByRole("button", { name: "Compare" }).click();
+  await experience.getByRole("tab", { name: "Compare", exact: true }).click();
   const results = await new AxeBuilder({ page })
     .include("ecodeling-experience")
     .disableRules(["landmark-one-main"])
@@ -177,7 +177,9 @@ test("runs a browser to API to Python simulation replay workflow", async ({
     "single full simulation workflow",
   );
   const experience = page.locator("ecodeling-experience");
-  await experience.getByRole("button", { name: "Laboratory" }).click();
+  await experience
+    .getByRole("tab", { name: "Laboratory", exact: true })
+    .click();
   await expect(
     experience.getByRole("heading", { name: "Laboratory" }),
   ).toBeVisible();

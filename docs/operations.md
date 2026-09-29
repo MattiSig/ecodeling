@@ -64,3 +64,8 @@ errors, and immutable artifact responses. Do not expose the service-data directo
    static canonical replay while the service is repaired.
 
 No database migration or destructive cache action is required to roll back the canonical release.
+
+Phase 18 adds a replay export revision to optional-service cache identity. Corrected `stocks-1`
+bundles include opening ledger positions; earlier cached artifacts remain immutable but are not
+selected for new requests. Deploy the corrected component and replay together through the normal
+checksummed handoff: its reader rejects sector stocks inconsistent with analytical series.

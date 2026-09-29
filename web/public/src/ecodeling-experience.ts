@@ -32,8 +32,17 @@ import {
   type LaboratoryParameters,
 } from "./laboratory-client.js";
 
+import {
+  article,
+  introduction,
+  MODE_DESCRIPTIONS,
+  type ReaderMode,
+  type EvidenceTarget,
+} from "./reader-article.js";
+import { glossary, METRIC_GUIDES } from "./reader-glossary.js";
+
 type LoadStatus = "empty" | "loading" | "ready" | "error";
-type ExperienceMode = "story" | "explore" | "compare" | "laboratory";
+type ExperienceMode = ReaderMode;
 type ComparisonView = ReplayRegime | "split";
 
 export interface EcodelingReadyDetail {
@@ -81,7 +90,9 @@ export class EcodelingExperience extends LitElement {
   @state() private message = "";
   @state() private revision = 0;
   @state() private reducedMotion = false;
-  @state() private mode: ExperienceMode = "story";
+  @state() private mode: ExperienceMode = "article";
+  @property({ type: String, attribute: "initial-mode" }) initialMode = "";
+  #articleScroll = 0;
   @state() private playing = false;
   @state() private speed = 1;
   @state() private storyIndex = 0;
@@ -149,6 +160,22 @@ export class EcodelingExperience extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    try {
+      const requested =
+        this.initialMode ||
+        new URL(location.href).searchParams.get("ecodeling-mode") ||
+        sessionStorage.getItem(
+          `ecodeling-mode:${location.pathname}:${this.id || this.src}`,
+        );
+      if (
+        requested &&
+        Object.hasOwn(MODE_DESCRIPTIONS, requested) &&
+        (requested !== "laboratory" || this.apiBase.trim())
+      )
+        this.mode = requested as ExperienceMode;
+    } catch {
+      /* Storage is optional in restricted embeds. */
+    }
     this.setAttribute("role", "region");
     this.setAttribute("aria-label", "Ecodeling economic replay");
     if (!this.hasAttribute("tabindex")) this.tabIndex = 0;
@@ -198,11 +225,21 @@ export class EcodelingExperience extends LitElement {
   }
 
   select(selection: ReplaySelection | null): void {
+    if (
+      selection?.kind === "sector" &&
+      SECTORS.includes(selection.id as ReplaySector)
+    )
+      this.cameraSector = selection.id as ReplaySector;
     this.replayState.select(selection);
   }
 
   play(): void {
-    if (this.staticMode || this.replayState.months.length === 0) return;
+    if (
+      this.mode === "article" ||
+      this.staticMode ||
+      this.replayState.months.length === 0
+    )
+      return;
     if (this.replayState.monthIndex >= this.replayState.months.length - 1)
       this.setMonth(0);
     this.playing = true;
@@ -222,7 +259,12 @@ export class EcodelingExperience extends LitElement {
   };
 
   #handleKeydown = (event: KeyboardEvent): void => {
-    if (this.status !== "ready") return;
+    if (
+      this.status !== "ready" ||
+      this.mode === "article" ||
+      event.composedPath()[0] !== this
+    )
+      return;
     if (event.key === "ArrowLeft")
       this.setMonth(this.replayState.monthIndex - 1);
     else if (event.key === "ArrowRight")
@@ -336,7 +378,7 @@ export class EcodelingExperience extends LitElement {
             Recorded simulation results. No economics runs in this browser.
           </p>
         </div>
-        ${this.#renderBody()}
+        ${introduction()} ${glossary()} ${this.#renderBody()}
       </div>
     `;
   }
@@ -389,124 +431,231 @@ export class EcodelingExperience extends LitElement {
     const scene = scenes[this.storyIndex] ?? scenes[0]!;
     return html`
       <section class="ready">
-        <nav class="mode-tabs" aria-label="Experience mode">
-          ${(
-            [
-              "story",
-              "explore",
-              "compare",
-              ...(this.apiBase.trim() === "" ? [] : (["laboratory"] as const)),
-            ] as ExperienceMode[]
-          ).map(
+        <div
+          class="mode-tabs"
+          role="tablist"
+          aria-label="Experience mode"
+          @keydown=${this.#tabKeydown}
+        >
+          ${this.#modes().map(
             (mode) =>
               html`<button
                 type="button"
+                role="tab"
+                id=${`tab-${mode}`}
+                aria-controls="mode-panel"
+                aria-selected=${this.mode === mode ? "true" : "false"}
+                tabindex=${this.mode === mode ? "0" : "-1"}
                 class=${this.mode === mode ? "active" : ""}
-                aria-current=${this.mode === mode ? "page" : nothing}
-                @click=${() => (this.mode = mode)}
+                @click=${() => this.#setMode(mode)}
               >
-                ${mode === "story"
-                  ? "Story"
-                  : mode === "explore"
-                    ? "Explore"
-                    : mode === "compare"
-                      ? "Compare"
-                      : "Laboratory"}
+                ${mode[0]!.toUpperCase() + mode.slice(1)}
               </button>`,
           )}
-          <span
-            >${this.reducedMotion || this.staticMode
-              ? "Reduced motion"
-              : "Motion on"}</span
-          >
-        </nav>
-
-        <div class="month-ribbon">
-          <div class="month-copy">
-            <span>Simulation month</span><strong>${month}</strong>
-          </div>
-          <div class="timeline-wrap">
-            <input
-              aria-label="Simulation month"
-              type="range"
-              min="0"
-              max=${lastIndex}
-              .value=${String(this.replayState.monthIndex)}
-              @input=${(event: InputEvent) =>
-                this.setMonth(
-                  Number((event.currentTarget as HTMLInputElement).value),
-                )}
-              style=${`--progress: ${progress}%`}
-            />
-            <div class="range-labels" aria-hidden="true">
-              <span>${replay.manifest.months[0]}</span
-              ><span>${replay.manifest.months[lastIndex]}</span>
-            </div>
-          </div>
-          <div class="playback-controls" aria-label="Playback controls">
-            <button type="button" @click=${() => this.restart()}>
-              Restart
-            </button>
-            <button
-              type="button"
-              class="primary"
-              ?disabled=${this.staticMode}
-              @click=${() => (this.playing ? this.pause() : this.play())}
-            >
-              ${this.playing ? "Pause" : "Play"}
-            </button>
-            <label
-              >Speed<select
-                aria-label="Playback speed"
-                .value=${String(this.speed)}
-                @change=${(event: Event) =>
-                  (this.speed = Number(
-                    (event.currentTarget as HTMLSelectElement).value,
-                  ))}
+        </div>
+        <p class="mode-description">
+          ${MODE_DESCRIPTIONS[this.mode]}
+          ${this.reducedMotion || this.staticMode
+            ? "Reduced motion"
+            : "Motion on"}
+        </p>
+        <div
+          id="mode-panel"
+          role="tabpanel"
+          aria-labelledby=${`tab-${this.mode}`}
+          tabindex="0"
+        >
+          ${this.mode === "article"
+            ? html`<div
+                class="article-scroll"
+                tabindex="0"
+                role="region"
+                aria-label="Scrollable article"
               >
-                <option value="0.5">0.5×</option>
-                <option value="1">1×</option>
-                <option value="2">2×</option>
-              </select></label
-            >
-          </div>
-        </div>
-
-        <div class="marker-row" aria-label="Timeline markers">
-          ${replay.timeline.map((point) =>
-            point.shock || point.policy_decision
-              ? html`<button
-                  type="button"
-                  @click=${() => this.setMonth(point.index)}
-                  title=${`${point.month}: ${
-                    point.shock ? "shock" : "policy decision"
-                  }`}
-                >
-                  <span>${point.shock ? "Shock" : "Policy"}</span
-                  ><small>${point.month}</small>
-                </button>`
-              : nothing,
-          )}
-          ${!currentTimeline?.shock && !currentTimeline?.policy_decision
-            ? html`<span class="quiet-marker">No event marker this month</span>`
-            : nothing}
-        </div>
-
-        ${this.mode === "laboratory"
-          ? this.#renderLaboratory()
-          : this.mode === "compare"
-            ? this.#renderComparison(replay, month)
-            : html`${this.mode === "story"
-                  ? this.#renderStory(scenes, scene)
+                ${this.customReplay
+                  ? html`<p>
+                        Custom experiment results. Restore the canonical replay
+                        to read the published experiment.
+                      </p>
+                      <button @click=${() => this.#restoreCanonical()}>
+                        Restore canonical replay
+                      </button>`
                   : nothing}
-                <div class="shell-grid">
-                  ${this.#renderEconomy(replay, month, scene)}
-                  ${this.#renderInspector(replay, month)}
+                ${article(
+                  replay,
+                  month,
+                  (target) => this.#openEvidence(target),
+                  (points, unit, cursor, metric) =>
+                    this.#renderPairedChart(points, unit, cursor, metric),
+                )}
+              </div>`
+            : html`
+                <div class="month-ribbon">
+                  <div class="month-copy">
+                    <span>Simulation month</span><strong>${month}</strong>
+                  </div>
+                  <div class="timeline-wrap">
+                    <input
+                      aria-label="Simulation month"
+                      type="range"
+                      min="0"
+                      max=${lastIndex}
+                      .value=${String(this.replayState.monthIndex)}
+                      @input=${(event: InputEvent) =>
+                        this.setMonth(
+                          Number(
+                            (event.currentTarget as HTMLInputElement).value,
+                          ),
+                        )}
+                      style=${`--progress: ${progress}%`}
+                    />
+                    <div class="range-labels" aria-hidden="true">
+                      <span>${replay.manifest.months[0]}</span
+                      ><span>${replay.manifest.months[lastIndex]}</span>
+                    </div>
+                  </div>
+                  <div class="playback-controls" aria-label="Playback controls">
+                    <button type="button" @click=${() => this.restart()}>
+                      Restart
+                    </button>
+                    <button
+                      type="button"
+                      class="primary"
+                      ?disabled=${this.staticMode}
+                      @click=${() =>
+                        this.playing ? this.pause() : this.play()}
+                    >
+                      ${this.playing ? "Pause" : "Play"}
+                    </button>
+                    <label
+                      >Speed<select
+                        aria-label="Playback speed"
+                        .value=${String(this.speed)}
+                        @change=${(event: Event) =>
+                          (this.speed = Number(
+                            (event.currentTarget as HTMLSelectElement).value,
+                          ))}
+                      >
+                        <option value="0.5">0.5×</option>
+                        <option value="1">1×</option>
+                        <option value="2">2×</option>
+                      </select></label
+                    >
+                  </div>
                 </div>
-                ${this.#renderMetrics(replay, month)}`}
+
+                <div class="marker-row" aria-label="Timeline markers">
+                  ${replay.timeline.map((point) =>
+                    point.shock || point.policy_decision
+                      ? html`<button
+                          type="button"
+                          @click=${() => this.setMonth(point.index)}
+                          title=${`${point.month}: ${
+                            point.shock ? "shock" : "policy decision"
+                          }`}
+                        >
+                          <span>${point.shock ? "Shock" : "Policy"}</span
+                          ><small>${point.month}</small>
+                        </button>`
+                      : nothing,
+                  )}
+                  ${!currentTimeline?.shock && !currentTimeline?.policy_decision
+                    ? html`<span class="quiet-marker"
+                        >No event marker this month</span
+                      >`
+                    : nothing}
+                </div>
+
+                ${this.mode === "laboratory"
+                  ? this.#renderLaboratory()
+                  : this.mode === "compare"
+                    ? this.#renderComparison(replay, month)
+                    : html`${this.mode === "story"
+                          ? this.#renderStory(scenes, scene)
+                          : nothing}
+                        <div class="shell-grid">
+                          ${this.#renderEconomy(replay, month, scene)}
+                          ${this.#renderInspector(replay, month)}
+                        </div>
+                        ${this.#renderMetrics(replay, month)}`}
+              `}
+        </div>
         ${this.#renderProvenance(replay)}
       </section>
     `;
+  }
+
+  #modes(): ExperienceMode[] {
+    return [
+      "article",
+      "story",
+      "explore",
+      "compare",
+      ...(this.apiBase.trim() ? ["laboratory" as const] : []),
+    ];
+  }
+
+  #setMode(mode: ExperienceMode): void {
+    if (this.mode === "article")
+      this.#articleScroll =
+        this.renderRoot.querySelector(".article-scroll")?.scrollTop ??
+        this.#articleScroll;
+    this.mode = mode;
+    if (mode === "article") this.pause();
+    try {
+      sessionStorage.setItem(
+        `ecodeling-mode:${location.pathname}:${this.id || this.src}`,
+        mode,
+      );
+    } catch {
+      /* optional */
+    }
+    void this.updateComplete.then(() => {
+      const reader = this.renderRoot.querySelector(".article-scroll");
+      if (mode === "article" && reader) reader.scrollTop = this.#articleScroll;
+    });
+  }
+
+  #tabKeydown = (event: KeyboardEvent): void => {
+    const modes = this.#modes();
+    let index = modes.indexOf(this.mode);
+    if (event.key === "ArrowRight") index = (index + 1) % modes.length;
+    else if (event.key === "ArrowLeft")
+      index = (index + modes.length - 1) % modes.length;
+    else if (event.key === "Home") index = 0;
+    else if (event.key === "End") index = modes.length - 1;
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.#setMode(modes[index]!);
+    void this.updateComplete.then(() =>
+      (
+        this.renderRoot.querySelector(`#tab-${modes[index]}`) as HTMLElement
+      )?.focus(),
+    );
+  };
+
+  #openEvidence(target: EvidenceTarget): void {
+    this.pause();
+    this.setMonth(this.replayState.months.indexOf(target.month));
+    if (target.metric) this.selectedMetric = target.metric;
+    if (target.regime) this.activeRegime = target.regime;
+    if (target.sector) {
+      this.cameraSector = target.sector;
+      this.select({ kind: "sector", id: target.sector });
+    }
+    if (target.agent) this.select({ kind: "agent", id: target.agent });
+    if (target.event && !target.sector)
+      this.select({ kind: "event", id: target.event });
+    if (target.mode === "story" && this.replay) {
+      const scenes = storyScenes(this.replay, this.activeRegime);
+      const found = scenes.findIndex((scene) => scene.month === target.month);
+      this.storyIndex = Math.max(0, found);
+    }
+    this.#setMode(target.mode);
+    void this.updateComplete.then(() =>
+      (this.renderRoot.querySelector("#mode-panel") as HTMLElement)?.focus(),
+    );
   }
 
   #laboratoryParameters(form: HTMLFormElement): LaboratoryParameters {
@@ -976,6 +1125,13 @@ export class EcodelingExperience extends LitElement {
     return html`<section class="inspector" aria-labelledby="inspector-title">
       <p class="eyebrow">Inspect ${month}</p>
       <h2 id="inspector-title">Exact recorded values</h2>
+      <p>
+        Stocks are month-end balances in nominal whole Icelandic krónur (ISK);
+        income, consumption, payments, and revaluation cover this month. A
+        larger liability means more owed; equity is assets minus liabilities.
+        Unavailable is not zero. Baseline: the selected ${this.activeRegime} run
+        at ${month}.
+      </p>
       ${selectedSector && snapshot
         ? html`<div class="inspection-card">
             <h3>${SECTOR_LABELS[selectedSector]}</h3>
@@ -1049,6 +1205,11 @@ export class EcodelingExperience extends LitElement {
         )}
       </div>
       <h3>Events this month</h3>
+      <p>
+        Recorded changes and their source IDs. A revaluation changes a balance
+        without transferring cash; event order alone does not establish
+        causality.
+      </p>
       ${events.length === 0
         ? html`<p>No typed event is recorded this month.</p>`
         : html`<ul class="event-list">
@@ -1153,6 +1314,7 @@ export class EcodelingExperience extends LitElement {
       </div>
 
       <section class="chart-panel" aria-labelledby="chart-title">
+        <p>${METRIC_GUIDES[this.selectedMetric]}</p>
         <div class="chart-heading">
           <div>
             <p class="eyebrow">Synchronized analytical chart</p>
@@ -1173,7 +1335,12 @@ export class EcodelingExperience extends LitElement {
             >
               ${COMPARISON_METRICS.map(
                 (metric) =>
-                  html`<option value=${metric.name}>${metric.label}</option>`,
+                  html`<option
+                    value=${metric.name}
+                    .selected=${metric.name === this.selectedMetric}
+                  >
+                    ${metric.label}
+                  </option>`,
               )}
             </select></label
           >
@@ -1225,7 +1392,10 @@ export class EcodelingExperience extends LitElement {
                 >
                   ${dimensions.map(
                     (dimension) =>
-                      html`<option value=${dimension}>
+                      html`<option
+                        value=${dimension}
+                        .selected=${dimension === this.cohortDimension}
+                      >
                         ${dimension.replaceAll("_", " ")}
                       </option>`,
                   )}
@@ -1401,6 +1571,7 @@ export class EcodelingExperience extends LitElement {
     }>,
     unit: string,
     month: string,
+    metric = this.selectedMetric,
   ) {
     const values = points.flatMap((point) =>
       [point.nominal, point.indexed].filter(
@@ -1433,7 +1604,7 @@ export class EcodelingExperience extends LitElement {
       <svg
         viewBox="0 0 100 100"
         role="img"
-        aria-label=${`Nominal and indexed ${this.selectedMetric} across ${points.length} aligned months; current month ${month}`}
+        aria-label=${`Nominal and indexed ${metric} across ${points.length} aligned months; current month ${month}`}
         preserveAspectRatio="none"
       >
         <line class="chart-axis" x1="6" y1="90" x2="94" y2="90"></line>
@@ -1487,6 +1658,154 @@ export class EcodelingExperience extends LitElement {
   }
 
   static override styles = css`
+    .inline-term {
+      position: relative;
+      display: inline;
+    }
+    .inline-term button {
+      color: var(--ec-fg);
+      background: transparent;
+      border: 0;
+      border-bottom: 1px dotted var(--ec-signal);
+      border-radius: 0;
+      padding: 0.1rem 0.2rem;
+      cursor: help;
+      font: inherit;
+    }
+    .term-definition {
+      display: block;
+      border: 1px solid var(--ec-rule);
+      background: var(--ec-panel);
+      padding: 0.75rem;
+      color: var(--ec-fg);
+      max-width: 70ch;
+      font-size: 0.9rem;
+    }
+    .term-definition[hidden] {
+      display: none;
+    }
+    .reader-intro,
+    .reader-glossary,
+    .mode-description {
+      padding: 1rem clamp(1rem, 3vw, 2rem);
+    }
+    .reader-intro p,
+    .reading-guide,
+    .reader-limits {
+      max-width: 76ch;
+      line-height: 1.75;
+    }
+    .reader-intro h2 {
+      font-size: clamp(1.3rem, 3vw, 2rem);
+    }
+    summary {
+      cursor: pointer;
+      padding: 0.7rem 0;
+    }
+    .reader-glossary {
+      border-block: 1px solid var(--ec-rule);
+    }
+    .reader-glossary dl {
+      margin: 0;
+    }
+    .glossary-entry {
+      border-top: 1px solid var(--ec-rule);
+    }
+    .glossary-entry p {
+      max-width: 76ch;
+      line-height: 1.7;
+    }
+    .mode-description {
+      margin: 0;
+      border-bottom: 1px solid var(--ec-rule);
+    }
+    .article-scroll {
+      max-height: 78vh;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+    .reader-article {
+      max-width: 82ch;
+      margin-inline: auto;
+      padding: clamp(1rem, 3vw, 2rem);
+      line-height: 1.8;
+    }
+    .reader-article section {
+      padding-block: 1.5rem;
+      border-bottom: 1px solid var(--ec-rule);
+    }
+    .reader-article h2 {
+      line-height: 1.35;
+      font-size: clamp(1.3rem, 2vw, 1.7rem);
+    }
+    .reader-article figure {
+      margin: 1.5rem 0;
+    }
+    .reader-article figcaption,
+    .reader-article small {
+      display: block;
+      font-size: 0.85rem;
+      overflow-wrap: anywhere;
+    }
+    .reader-article button {
+      color: var(--ec-fg);
+      background: var(--ec-panel);
+      border: 1px solid var(--ec-rule);
+      border-radius: 0;
+      padding: 0.7rem;
+      min-height: 44px;
+      margin: 0.5rem 0.5rem 0.5rem 0;
+      white-space: normal;
+      text-align: left;
+    }
+    .stage {
+      align-self: start;
+    }
+    .article-timeline {
+      padding-left: 1.5rem;
+      border-left: 1px solid var(--ec-rule);
+    }
+    .shock-marker {
+      color: var(--ec-signal);
+      font-weight: 700;
+    }
+    .article-evidence {
+      border-top: 1px solid var(--ec-rule);
+      margin-top: 1rem;
+    }
+    .evidence-values {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    .evidence-values dd {
+      margin: 0;
+      font-weight: 700;
+    }
+    .table-scroll {
+      overflow-x: auto;
+    }
+    .reader-article table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .reader-article td,
+    .reader-article th {
+      padding: 0.6rem;
+      border-bottom: 1px solid var(--ec-rule);
+      text-align: left;
+    }
+    .article-source {
+      overflow-wrap: anywhere;
+    }
+    @media print {
+      .article-scroll {
+        max-height: none;
+        overflow: visible;
+      }
+    }
     :host {
       --ec-bg: var(--bg, #121316);
       --ec-fg: var(--fg, #e7e5df);

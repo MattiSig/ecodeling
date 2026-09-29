@@ -69,3 +69,12 @@ test("contract rejects incompatible, oversized, and drifting bundles", () => {
     /series timeline is not aligned/,
   );
 });
+
+test("contract rejects sector changes presented as stocks without opening balances", () => {
+  const incorrect = structuredClone(bundle);
+  incorrect.sector_snapshots.find((s) => s.sector === "banks")!.equity_isk = 0;
+  assert.throws(
+    () => validateReplayV1(incorrect),
+    /Sector stocks do not reconcile/,
+  );
+});

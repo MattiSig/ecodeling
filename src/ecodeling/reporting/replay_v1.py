@@ -28,6 +28,7 @@ from ecodeling.economy.outputs import (
 
 Month = Annotated[str, Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")]
 ISKValue = Annotated[int, Field(description="Exact nominal whole Icelandic kronur")]
+REPLAY_EXPORT_REVISION = "stocks-1"
 DEFAULT_MAX_UNCOMPRESSED_BYTES = 2_000_000
 
 
@@ -392,6 +393,13 @@ def _sector_balances(
     entries_by_month: dict[str, list[JournalEntry]] = defaultdict(list)
     for entry in result.ledger.entries:
         entries_by_month[str(entry.month)].append(entry)
+    # Origination and opening capital are journaled before the reporting window.
+    # Include them once; otherwise the alleged stocks are only cumulative changes.
+    first_month = str(result.aggregate_months[0].month)
+    for entry in result.ledger.entries:
+        if str(entry.month) < first_month:
+            for posting in entry.postings:
+                balances[posting.account_id] += posting.amount
     for aggregate in result.aggregate_months:
         month = str(aggregate.month)
         for entry in entries_by_month[month]:
@@ -792,8 +800,19 @@ def _assert_reconciliation(bundle: ReplayBundleV1, pair: PairedEconomyResult) ->
         }
         flows = [item for item in bundle.sector_flows if item.regime == regime]
         distributions = [item for item in bundle.distribution_series if item.regime == regime]
+        snapshots = {
+            (item.sector, item.month): item
+            for item in bundle.sector_snapshots
+            if item.regime == regime
+        }
         for aggregate in result.aggregate_months:
             month = str(aggregate.month)
+            if (
+                snapshots[("banks", month)].equity_isk != aggregate.bank_equity
+                or snapshots[("households", month)].liabilities_isk
+                != aggregate.total_mortgage_principal
+            ):
+                raise ValueError(f"sector-stock reconciliation failed for {regime} {month}")
             expected = {
                 "cpi_level": aggregate.cpi_level,
                 "mortgage_principal": aggregate.total_mortgage_principal,
@@ -849,7 +868,7 @@ def export_replay_v1(
     policy_months = {str(event.month) for event in pair.nominal.policy_events}
     bundle = ReplayBundleV1(
         manifest=ReplayManifestV1(
-            bundle_id=f"paired-{pair.nominal.seed}-{pair.nominal.configuration_hash[:8]}-{pair.indexed.configuration_hash[:8]}",
+            bundle_id=f"paired-{pair.nominal.seed}-{pair.nominal.configuration_hash[:8]}-{pair.indexed.configuration_hash[:8]}-{REPLAY_EXPORT_REVISION}",
             model_version=__version__,
             git_commit=git_commit,
             scenario_id=str(pair.nominal.scenario_id).removesuffix("-nominal"),

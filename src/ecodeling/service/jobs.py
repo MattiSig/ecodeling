@@ -27,6 +27,7 @@ from ecodeling.config.schema import (
 from ecodeling.economy import run_endogenous_indexation_comparison
 from ecodeling.identifiers import ScenarioId
 from ecodeling.reporting import export_replay_v1, serialize_replay_v1
+from ecodeling.reporting.replay_v1 import REPLAY_EXPORT_REVISION
 
 MAX_REPLAY_BYTES = 2_000_000
 
@@ -97,8 +98,8 @@ def public_model_config(request: PublicExperiment) -> ModelConfig:
 
 
 def cache_key(config: ModelConfig) -> str:
-    """Key results by model version and every result-affecting parameter."""
-    material = f"{__version__}\0{config.configuration_hash()}".encode()
+    """Key results by model/export versions and every result-affecting parameter."""
+    material = f"{__version__}\0{REPLAY_EXPORT_REVISION}\0{config.configuration_hash()}".encode()
     return hashlib.sha256(material).hexdigest()
 
 

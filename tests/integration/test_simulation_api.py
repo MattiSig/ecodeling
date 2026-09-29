@@ -9,6 +9,7 @@ from concurrent.futures import Future
 from pathlib import Path
 
 import httpx
+import pytest
 
 from ecodeling.reporting import load_replay_v1
 from ecodeling.service.api import create_app
@@ -215,3 +216,17 @@ def test_worker_failure_is_structured_and_same_request_can_retry(tmp_path: Path)
             assert completed.json()["status"] == "completed"
 
     asyncio.run(exercise())
+
+
+def test_cache_identity_changes_with_replay_export_revision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A corrected presentation must not reuse immutable defective replay files."""
+    from ecodeling.config.schema import ModelConfig
+    from ecodeling.identifiers import ScenarioId
+    from ecodeling.service import jobs
+
+    config = ModelConfig(scenario_id=ScenarioId("export-cache"))
+    current = jobs.cache_key(config)
+    monkeypatch.setattr(jobs, "REPLAY_EXPORT_REVISION", "earlier-export")
+    assert jobs.cache_key(config) != current

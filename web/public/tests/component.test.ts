@@ -42,10 +42,28 @@ const replay = {
 
 afterEach(() => {
   document.body.replaceChildren();
+  sessionStorage.clear();
   vi.restoreAllMocks();
 });
 
 describe("ecodeling-experience", () => {
+  it("ignores an invalid mode supplied by a host", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(replay)),
+    );
+    const element = document.createElement("ecodeling-experience");
+    element.initialMode = "toString";
+    element.src = "/canonical.json";
+    document.body.append(element);
+    await vi.waitFor(() =>
+      expect(
+        element.shadowRoot
+          ?.querySelector('[role="tab"][aria-selected="true"]')
+          ?.textContent?.trim(),
+      ).toBe("Article"),
+    );
+  });
+
   it("renders an embeddable empty state", async () => {
     const element = document.createElement("ecodeling-experience");
     document.body.append(element);
@@ -65,6 +83,7 @@ describe("ecodeling-experience", () => {
     const monthChanged = vi.fn();
     element.addEventListener("ecodeling-ready", ready);
     element.addEventListener("ecodeling-month-change", monthChanged);
+    element.initialMode = "story";
     element.src = "/canonical.json";
     document.body.append(element);
     await vi.waitFor(() => expect(ready).toHaveBeenCalledOnce());
@@ -108,6 +127,7 @@ describe("ecodeling-experience", () => {
     const element = document.createElement(
       "ecodeling-experience",
     ) as EcodelingExperience;
+    element.initialMode = "story";
     element.src = "/canonical.json";
     element.apiBase = "/api/v1";
     document.body.append(element);
@@ -134,6 +154,7 @@ describe("ecodeling-experience", () => {
     const element = document.createElement(
       "ecodeling-experience",
     ) as EcodelingExperience;
+    element.initialMode = "story";
     element.src = "/canonical.json";
     document.body.append(element);
     await vi.waitFor(() =>

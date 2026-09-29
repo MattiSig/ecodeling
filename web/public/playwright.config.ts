@@ -7,6 +7,7 @@ const webPort = Number(process.env.ECODELING_WEB_PORT ?? 4173);
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/reader-cv.spec.ts",
   fullyParallel: true,
   projects: [
     { name: "desktop", use: { viewport: { width: 1280, height: 900 } } },

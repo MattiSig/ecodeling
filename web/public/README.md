@@ -92,3 +92,45 @@ npm run format:check
 npm test
 npm run test:browser
 ```
+
+## Article and reader onboarding
+
+Article is the first-reader default. `initial-mode="story"` (or `article`, `explore`, `compare`,
+`laboratory`) explicitly chooses an entry point. Otherwise `?ecodeling-mode=compare` takes
+precedence over the per-route, per-element session preference. Laboratory still requires
+`api-base`. Storage failure does not prevent reading. Give multiple embeds stable `id` values to
+keep their preferences independent.
+
+The tablist uses Arrow Left/Right and Home/End with a single tab stop; touch and pointer actions
+select the same panels. Article pauses playback. Its scroll position survives evidence links and
+ordinary tab changes within the mounted component. Evidence links select the recorded month and,
+where relevant, metric, sector, regime, or actual representative household. They preserve other
+shared state. Returning to Article restores the previous reading position; it does not rewind the
+clock. The article's charts and current-month cohort table follow that same clock. Opening and
+closing evidence stays explicitly labeled with its own source months.
+
+`reader-article.ts` reads the installed validated replay for every numerical claim. It contains no
+copied canonical result constants or alternate chart source. A custom Laboratory replay is labeled
+as such and offers canonical restoration. Missing values remain unavailable. The before/after
+balance-sheet view uses month-end snapshots, which include settlement and defaults, and explicitly
+does not equate their difference with the separate recorded revaluation event.
+
+`reader-glossary.ts` is the authoritative browser glossary, adapted from `specs/21_glossary.md`.
+Inline terms and the complete glossary share definitions and accessible descriptions. Pointer
+hover, keyboard focus, touch activation, and Escape dismissal do not depend on native title
+attributes. The introduction, glossary, and model limitations remain available during loading or
+failure. Static and reduced-motion readers see the same tables, charts, and interpretation.
+
+Reader verification includes every-month replay-to-claim reconciliation, missing/changed-value
+fixtures, acronym coverage, keyboard/touch interaction, playback pause, state handoff, restored
+scroll, all-tab axe audits, and desktop/mobile dark/light screenshots. To also test the real CV
+route, use a disposable CV checkout (the test starts its Go server locally):
+
+```bash
+scripts/export-cv-assets.sh /path/to/disposable-cv/web/static/ecodeling
+ECODELING_CV_CHECKOUT=/path/to/disposable-cv npm run test:cv
+```
+
+The CV gate verifies `/work/ecodeling`, Article-to-Story/Explore/Compare handoffs and returns,
+host themes, accessibility, responsive containment, and absence of Laboratory/API requests. It
+uses the exported production bundle; it does not publish or modify the CV source templates.

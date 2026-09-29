@@ -110,3 +110,48 @@ def test_v1_loader_has_explicit_compatibility_errors() -> None:
         load_replay_v1(json.dumps({"manifest": {"schema_version": 2}}))
     with pytest.raises(ReplayCompatibilityError, match="not valid JSON"):
         load_replay_v1("not json")
+
+
+def test_sector_stocks_include_opening_journal_and_reconcile_with_monthly_outputs() -> None:
+    """Check against the complete journal, independently of the export accumulator."""
+    from ecodeling.accounting import AccountKind
+
+    pair = run_endogenous_indexation_comparison(
+        ModelConfig(
+            scenario_id=ScenarioId("opening-stock-audit"),
+            simulation=SimulationConfig(months=6, seed=1818),
+            micro=MicroSimulationConfig(households=10, banks=1),
+            real_economy=RealEconomyConfig(firms=2),
+            foreign_sector=ForeignSectorConfig(import_share_bps=2_500),
+            shock=ShockConfig(kind=ShockKind.FX_DEPRECIATION, month=2, magnitude=0.1),
+        )
+    )
+    bundle = export_replay_v1(pair, git_commit="stock-audit")
+    for regime, result in (("nominal", pair.nominal), ("indexed", pair.indexed)):
+        for snapshot in bundle.sector_snapshots:
+            if snapshot.regime != regime or snapshot.sector in {"government", "central_bank"}:
+                continue
+            accounts = {
+                a.id: a for a in result.ledger.accounts if a.sector.value == snapshot.sector
+            }
+            for field, kind in (
+                ("financial_assets_isk", AccountKind.FINANCIAL_ASSET),
+                ("real_assets_isk", AccountKind.REAL_ASSET),
+                ("liabilities_isk", AccountKind.LIABILITY),
+                ("equity_isk", AccountKind.EQUITY),
+            ):
+                expected = sum(
+                    posting.amount
+                    for entry in result.ledger.entries
+                    if str(entry.month) <= snapshot.month
+                    for posting in entry.postings
+                    if posting.account_id in accounts and accounts[posting.account_id].kind is kind
+                )
+                assert getattr(snapshot, field) == expected
+            aggregate = next(
+                row for row in result.aggregate_months if str(row.month) == snapshot.month
+            )
+            if snapshot.sector == "banks":
+                assert snapshot.equity_isk == aggregate.bank_equity
+            if snapshot.sector == "households":
+                assert snapshot.liabilities_isk == aggregate.total_mortgage_principal

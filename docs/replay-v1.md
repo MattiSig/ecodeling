@@ -74,3 +74,19 @@ flows must equal authoritative debt service; and income-quintile rows must sum t
 consumption and mortgage principal. Sector stocks are reconstructed month by month from ledger
 postings. Every nonzero visible flow names an existing ledger entry. Python and the TypeScript-
 facing runtime validator both consume the same checked compressed fixture as their contract test.
+
+## Opening-stock correction (Phase 18)
+
+The original exporter omitted journal entries dated before the reporting window. Those entries
+contain opening deposits, housing, bank capital, and mortgage origination, so its sector snapshots
+were cumulative changes rather than month-end stocks. The `stocks-1` export revision includes those
+entries once before applying monthly postings. Independent full-journal tests now check all sector
+positions at every month; export and browser validation also reconcile bank equity and household
+mortgage liabilities with analytical series. Incorrect earlier bundles fail validation.
+
+Corrected bundle IDs carry `-stocks-1`, and simulation-service cache keys include the export
+revision, so old immutable results are not reused. Aggregate trajectories, representative tracks,
+distributions, flows, events, seeds, configuration, and the economic transition rules are unchanged.
+The manifest's source commit continues to identify the original economic model; the Phase 18 commit
+identifies this presentation correction. The canonical checksums and recorded fallback views are
+refreshed; the existing release tag is not moved.

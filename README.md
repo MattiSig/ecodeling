@@ -251,6 +251,12 @@ npm run build:web
 npm run test:browser
 ```
 
+Phase 18 adds Article as the first-reader entry point, with a replay-backed walkthrough, exact
+paired evidence, a shared accessible glossary, and a conditional conclusion. Evidence links open
+Story, Explore, or Compare at the recorded month and restore reading position on return.
+`initial-mode` or `?ecodeling-mode=compare` provides direct entry; returning readers retain their
+mode for the session. The introduction and limitations remain readable if the replay fails.
+
 The canonical development host is available at `/web/public/` under `npm run dev:web`. Attributes,
 events, methods, fallback slots, and the visual encoding system are documented in
 [`web/public/README.md`](web/public/README.md).
@@ -287,8 +293,8 @@ in bounded worker processes using the installed `ecodeling` package; the browser
 loads only a completed, replay-v1-validated artifact.
 
 SQLite stores job metadata under `runs/service/` by default and gzip replay artifacts remain on the
-filesystem. Cache identity is the model version plus the complete canonical model-configuration
-hash. Identical concurrent requests therefore share one job, completed responses are immutable,
+filesystem. Cache identity includes the model version, replay-export revision, and complete canonical
+model-configuration hash. Identical concurrent requests therefore share one job, completed responses are immutable,
 and a failed or safely cancelled identity can be retried. Set `ECODELING_SERVICE_DATA` to relocate
 service state. `GET /docs` publishes the exact request and response schema.
 
