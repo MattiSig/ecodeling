@@ -4,6 +4,7 @@ from pathlib import Path
 from ecodeling.config.schema import (
     MicroSimulationConfig,
     ModelConfig,
+    MonetaryPolicyConfig,
     RealEconomyConfig,
     SimulationConfig,
 )
@@ -21,6 +22,13 @@ def test_seeded_no_shock_baseline_stays_within_calibrated_bounds() -> None:
         real_economy=RealEconomyConfig(
             firms=fixture["firms"],
             firm_cash_buffer_months=fixture["firm_cash_buffer_months"],
+        ),
+        # Preserve the Phase 06 calibration boundary while later policy
+        # mechanics are tested in their own impulse fixture.
+        monetary_policy=MonetaryPolicyConfig(
+            initial_policy_rate_annual=0.045,
+            minimum_rate_annual=0.045,
+            maximum_rate_annual=0.045,
         ),
     )
 

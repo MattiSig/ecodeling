@@ -93,19 +93,33 @@ class ForeignSectorConfig(FrozenConfigModel):
 
 
 class MonetaryPolicyConfig(FrozenConfigModel):
-    """Parameters for the later inflation-response policy rule."""
+    """Inflation-response rule and distinct interest-rate transmission channels."""
 
     inflation_target_annual: NonNegativeFinite = 0.025
+    neutral_real_rate_annual: NonNegativeFinite = 0.02
+    initial_policy_rate_annual: NonNegativeFinite = 0.045
     phi_pi: NonNegativeFinite = 1.5
     smoothing: Probability = 0.8
     minimum_rate_annual: Annotated[float, Field(allow_inf_nan=False)] = 0.0
     maximum_rate_annual: Annotated[float, Field(allow_inf_nan=False)] = 1.0
+    nominal_mortgage_reset_months: Annotated[int, Field(ge=1, le=1_200)] = 1
+    indexed_mortgage_reset_months: Annotated[int, Field(ge=1, le=1_200)] = 12
+    nominal_mortgage_pass_through: Probability = 1.0
+    indexed_mortgage_pass_through: Probability = 0.25
+    deposit_rate_pass_through: Probability = 0.5
+    bank_funding_rate_pass_through: Probability = 0.75
 
     @model_validator(mode="after")
     def validate_rate_bounds(self) -> Self:
         """Require an ordered interval for future policy-rate decisions."""
         if self.minimum_rate_annual > self.maximum_rate_annual:
             raise ValueError("minimum policy rate must not exceed maximum policy rate")
+        if (
+            not self.minimum_rate_annual
+            <= self.initial_policy_rate_annual
+            <= self.maximum_rate_annual
+        ):
+            raise ValueError("initial policy rate must lie within policy rate bounds")
         return self
 
 

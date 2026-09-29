@@ -190,15 +190,15 @@ Verification gate: standard quality suite plus paired 600-month runs with accoun
 
 Acceptance: the complete v0.1 feedback mechanism exists and every divergence can be traced to a rule, event, or ledger entry.
 
-## [ ] Phase 09 — Central bank and interest-rate transmission
+## [x] Phase 09 — Central bank and interest-rate transmission
 
 References: `specs/10_government_and_central_bank.md`, `specs/11_prices_cpi_and_fx.md`
 
-- [ ] Implement the configured inflation-response rule, smoothing, and rate bounds.
-- [ ] Implement explicit reset timing and pass-through for applicable loan rates.
-- [ ] Record policy decisions and debt-service effects as typed outputs/events.
-- [ ] Test policy timing, no-look-ahead behavior, bounds, and deterministic transmission.
-- [ ] Add paired fixtures showing how tightening differs from CPI principal revaluation.
+- [x] Implement the configured inflation-response rule, smoothing, and rate bounds.
+- [x] Implement explicit reset timing and pass-through for applicable loan rates.
+- [x] Record policy decisions and debt-service effects as typed outputs/events.
+- [x] Test policy timing, no-look-ahead behavior, bounds, and deterministic transmission.
+- [x] Add paired fixtures showing how tightening differs from CPI principal revaluation.
 
 Verification gate: standard quality suite plus policy impulse tests and long-run numerical stability checks.
 
@@ -381,3 +381,8 @@ Notes: Added integer-indexed exogenous FX and foreign-price paths, configurable 
 Baseline: ee02cee245dc403e61b59ce1248d545737bc7efe
 Verification: `uv sync --all-groups`; `uv run pytest` (75 passed, including paired 600-month nominal/indexed runs); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
 Notes: Joined the endogenous real economy to ledger-backed household mortgages and the bank balance sheet. CPI produced at period end becomes eligible only after one information month plus the configured contract lag; typed feedback events retain the source shock, CPI observations, revaluation ledger entry, debt service, household consumption, arrears/defaults, and bank equity. Mortgage alpha is converted once to integer basis points and uses one continuous coupon/indexation rule across the full 0.0–1.0 range. The paired runner changes only alpha/scenario identity while preserving initialized households/firms, named random streams, and the exogenous shock path. Current mortgage interest is returned deterministically as household bank dividends, a documented stylized closure assumption preventing the omitted bank-spending sector from becoming a permanent demand sink. The Phase 06 no-shock tolerance now permits a one-household employment fluctuation, and its aggregate goods assertion correctly includes opening inventory.
+
+2026-09-29 — Phase 09 — COMPLETE
+Baseline: 1e7a1816dad7a6a39eda2b78728779268531ce6e
+Verification: `uv sync --all-groups`; `uv run pytest` (80 passed, including policy impulse, paired-regime, and existing paired 600-month tests); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; dedicated 600-month policy stress run with accounting/rate/debt bounds; `npm test`; `npm run test:browser` (1 Playwright smoke test passed); `git diff --check` (all passed)
+Notes: Added an exact annual-basis-point Taylor-like rule with smoothing, configurable bounds, and a held initial rate until trailing twelve-month CPI exists. Month-end decisions become eligible only in the following month; nominal and indexed mortgages reset on independent schedules with distinct pass-through, while deposit and bank-funding channel rates are recorded separately. Typed decision/reset events link every applicable rate to its inflation observation and source decision, and monthly/household outputs separate coupon-driven interest from CPI principal revaluation. The checked paired impulse fixture shows nominal tightening through debt service versus indexed CPI revaluation plus weaker coupon pass-through. Existing isolated mortgage and micro-model contracts remain fixed-rate; the Phase 06 calibration explicitly pins policy to preserve its historical boundary. Result-affecting policy parameters changed the canonical configuration hash, so replay v0 was regenerated and reconciled.

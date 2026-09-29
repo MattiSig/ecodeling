@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import ROUND_HALF_UP, Decimal
 
 import numpy as np
@@ -41,8 +41,16 @@ from ecodeling.economy.outputs import (
     FirmMonthlyOutput,
     ForeignShockEvent,
     HouseholdEconomyMonthlyOutput,
+    InterestRateResetEvent,
     MortgageFeedbackEvent,
     PairedEconomyResult,
+    PolicyDecisionEvent,
+)
+from ecodeling.economy.policy import (
+    annual_rate_bps,
+    coefficient_bps,
+    decide_policy_rate,
+    passed_through_rate,
 )
 from ecodeling.identifiers import (
     AccountId,
@@ -540,6 +548,8 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
     aggregate_outputs: list[EconomyMonthlyOutput] = []
     shock_events: list[ForeignShockEvent] = []
     feedback_events: list[MortgageFeedbackEvent] = []
+    policy_events: list[PolicyDecisionEvent] = []
+    rate_reset_events: list[InterestRateResetEvent] = []
     base_price_sum = sum(firm.opening_price for firm in firms)
     baseline_import_price = _round_ratio(
         config.foreign_sector.baseline_exchange_rate_index
@@ -553,9 +563,102 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         )
         for offset in range(config.indexation.lag_months + 2, 0, -1)
     ]
+    policy_config = config.monetary_policy
+    policy_rate_bps = annual_rate_bps(policy_config.initial_policy_rate_annual)
+    reference_policy_rate_bps = policy_rate_bps
+    pricing = MortgagePricing(
+        real_rate_bps=config.micro.real_rate_bps,
+        expected_inflation_bps=config.micro.expected_inflation_bps,
+        inflation_risk_premium_bps=config.micro.inflation_risk_premium_bps,
+        credit_spread_bps=config.micro.credit_spread_bps,
+        term_spread_bps=0,
+        bank_margin_bps=0,
+    )
+    nominal_mortgage_rate_bps = pricing.nominal_coupon_bps
+    indexed_mortgage_rate_bps = pricing.indexed_coupon_bps
+    deposit_rate_bps = passed_through_rate(
+        0,
+        policy_rate_bps=policy_rate_bps,
+        reference_policy_rate_bps=0,
+        pass_through_bps=coefficient_bps(policy_config.deposit_rate_pass_through),
+    )
+    bank_funding_rate_bps = passed_through_rate(
+        0,
+        policy_rate_bps=policy_rate_bps,
+        reference_policy_rate_bps=0,
+        pass_through_bps=coefficient_bps(policy_config.bank_funding_rate_pass_through),
+    )
 
     for offset in range(config.simulation.months):
         month = config.simulation.start_month.add_months(offset)
+
+        # Decisions are made after CPI is known and become available one month
+        # later. Each transmission channel then follows its own reset schedule.
+        if policy_events:
+            source_policy_event = policy_events[-1]
+            effective_policy_rate = source_policy_event.policy_rate_bps
+            channel_specs = (
+                (
+                    "nominal_mortgage",
+                    offset % policy_config.nominal_mortgage_reset_months == 0,
+                    nominal_mortgage_rate_bps,
+                    pricing.nominal_coupon_bps,
+                    coefficient_bps(policy_config.nominal_mortgage_pass_through),
+                ),
+                (
+                    "indexed_mortgage",
+                    offset % policy_config.indexed_mortgage_reset_months == 0,
+                    indexed_mortgage_rate_bps,
+                    pricing.indexed_coupon_bps,
+                    coefficient_bps(policy_config.indexed_mortgage_pass_through),
+                ),
+                (
+                    "deposit",
+                    True,
+                    deposit_rate_bps,
+                    0,
+                    coefficient_bps(policy_config.deposit_rate_pass_through),
+                ),
+                (
+                    "bank_funding",
+                    True,
+                    bank_funding_rate_bps,
+                    0,
+                    coefficient_bps(policy_config.bank_funding_rate_pass_through),
+                ),
+            )
+            reset_rates: dict[str, int] = {}
+            for channel, resets_now, prior_rate, baseline_rate, pass_through in channel_specs:
+                if not resets_now:
+                    continue
+                new_rate = passed_through_rate(
+                    baseline_rate,
+                    policy_rate_bps=effective_policy_rate,
+                    reference_policy_rate_bps=(
+                        0 if channel in {"deposit", "bank_funding"} else reference_policy_rate_bps
+                    ),
+                    pass_through_bps=pass_through,
+                )
+                reset_rates[channel] = new_rate
+                rate_reset_events.append(
+                    InterestRateResetEvent(
+                        event_id=f"rate-reset:{channel}:{month}",
+                        month=month,
+                        channel=channel,
+                        source_policy_event_id=source_policy_event.event_id,
+                        prior_rate_bps=prior_rate,
+                        new_rate_bps=new_rate,
+                        pass_through_bps=pass_through,
+                    )
+                )
+            nominal_mortgage_rate_bps = reset_rates.get(
+                "nominal_mortgage", nominal_mortgage_rate_bps
+            )
+            indexed_mortgage_rate_bps = reset_rates.get(
+                "indexed_mortgage", indexed_mortgage_rate_bps
+            )
+            deposit_rate_bps = reset_rates.get("deposit", deposit_rate_bps)
+            bank_funding_rate_bps = reset_rates.get("bank_funding", bank_funding_rate_bps)
 
         # 0. Observe the current exogenous FX/foreign-price path before plans are made.
         exchange_rate, foreign_price, import_price = _foreign_path(config, offset)
@@ -717,6 +820,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         total_bank_revaluation = 0
         total_bank_interest = 0
         total_bank_losses = 0
+        mortgage_rates: dict[AgentId, int] = {}
         for household in households:
             household_state = household_states[household.id]
             if (
@@ -725,9 +829,20 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                 or household_state.principal == 0
             ):
                 mortgage_values[household.id] = (0, 0, 0, 0, 0, False)
+                mortgage_rates[household.id] = 0
                 continue
+            contract = contracts[household.id]
+            mortgage_rate = _round_ratio(
+                nominal_mortgage_rate_bps * (_BPS - contract.alpha_bps)
+                + indexed_mortgage_rate_bps * contract.alpha_bps,
+                _BPS,
+            )
+            mortgage_rates[household.id] = mortgage_rate
             calculated = calculate_period(
-                contracts[household.id], household_state.mortgage_state, month, reference_index
+                replace(contract, annual_rate_bps=mortgage_rate),
+                household_state.mortgage_state,
+                month,
+                reference_index,
             )
             revaluation = calculated.indexation_revaluation
             if revaluation:
@@ -951,6 +1066,31 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         )
         cpi_history.append(IndexObservation(month, cpi))
 
+        # The current CPI is complete only here. The resulting policy decision
+        # cannot affect this month's already-settled mortgages.
+        if annual_inflation is not None:
+            decision = decide_policy_rate(
+                policy_config,
+                decision_month=month,
+                observed_inflation_bps=annual_inflation,
+                prior_policy_rate_bps=policy_rate_bps,
+            )
+            policy_rate_bps = decision.policy_rate_bps
+            policy_events.append(
+                PolicyDecisionEvent(
+                    event_id=f"policy-decision:{month}",
+                    month=month,
+                    effective_month=decision.effective_month,
+                    inflation_observation_month=month,
+                    observed_annual_inflation_bps=decision.observed_inflation_bps,
+                    prior_policy_rate_bps=decision.prior_policy_rate_bps,
+                    unconstrained_policy_rate_bps=decision.unconstrained_rate_bps,
+                    policy_rate_bps=decision.policy_rate_bps,
+                    lower_bound_bps=decision.lower_bound_bps,
+                    upper_bound_bps=decision.upper_bound_bps,
+                )
+            )
+
         for household in households:
             household_state = household_states[household.id]
             scheduled, paid, interest, revaluation, arrears, defaulted_now = mortgage_values[
@@ -974,6 +1114,7 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
                     arrears,
                     household_state.arrears_months,
                     defaulted_now,
+                    mortgage_rates[household.id],
                 )
             )
         for firm in firms:
@@ -1046,6 +1187,12 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
             bank_mortgage_assets,
             bank_equity,
             revaluation_entry.id if revaluation_entry is not None else None,
+            policy_rate_bps,
+            nominal_mortgage_rate_bps,
+            indexed_mortgage_rate_bps,
+            deposit_rate_bps,
+            bank_funding_rate_bps,
+            total_bank_interest,
         )
         aggregate_outputs.append(aggregate)
         if revaluation_entry is not None:
@@ -1098,6 +1245,8 @@ def run_economy_simulation(config: ModelConfig) -> EconomySimulationResult:
         tuple(aggregate_outputs),
         tuple(shock_events),
         tuple(feedback_events),
+        tuple(policy_events),
+        tuple(rate_reset_events),
         ledger,
     )
 

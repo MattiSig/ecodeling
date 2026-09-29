@@ -29,6 +29,7 @@ class HouseholdEconomyMonthlyOutput:
     arrears: ISK
     arrears_months: int
     defaulted: bool
+    mortgage_rate_bps: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +91,12 @@ class EconomyMonthlyOutput:
     bank_mortgage_assets: ISK
     bank_equity: ISK
     revaluation_ledger_entry_id: LedgerEntryId | None
+    policy_rate_bps: int
+    nominal_mortgage_rate_bps: int
+    indexed_mortgage_rate_bps: int
+    deposit_rate_bps: int
+    bank_funding_rate_bps: int
+    mortgage_interest: ISK
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +139,35 @@ class ForeignShockEvent:
 
 
 @dataclass(frozen=True, slots=True)
+class PolicyDecisionEvent:
+    """A bounded month-end policy decision and its information set."""
+
+    event_id: str
+    month: YearMonth
+    effective_month: YearMonth
+    inflation_observation_month: YearMonth
+    observed_annual_inflation_bps: int
+    prior_policy_rate_bps: int
+    unconstrained_policy_rate_bps: int
+    policy_rate_bps: int
+    lower_bound_bps: int
+    upper_bound_bps: int
+
+
+@dataclass(frozen=True, slots=True)
+class InterestRateResetEvent:
+    """A policy-linked channel reset using a previously recorded decision."""
+
+    event_id: str
+    month: YearMonth
+    channel: str
+    source_policy_event_id: str
+    prior_rate_bps: int
+    new_rate_bps: int
+    pass_through_bps: int
+
+
+@dataclass(frozen=True, slots=True)
 class EconomySimulationResult:
     """Authoritative endogenous-economy outputs and accounting journal."""
 
@@ -146,6 +182,8 @@ class EconomySimulationResult:
     aggregate_months: tuple[EconomyMonthlyOutput, ...]
     shock_events: tuple[ForeignShockEvent, ...]
     feedback_events: tuple[MortgageFeedbackEvent, ...]
+    policy_events: tuple[PolicyDecisionEvent, ...]
+    rate_reset_events: tuple[InterestRateResetEvent, ...]
     ledger: Ledger
 
 

@@ -247,3 +247,25 @@ pair = run_endogenous_indexation_comparison(config)
 print(pair.nominal.aggregate_months[-1].total_mortgage_principal)
 print(pair.indexed.aggregate_months[-1].total_mortgage_principal)
 ```
+
+## Monetary policy and interest-rate transmission
+
+Phase 09 adds a smoothed, bounded Taylor-like rule using trailing twelve-month CPI inflation in
+annual basis points. Because CPI is finalized after the goods market closes, the decision recorded
+for month `t` is first available in `t + 1`; it can never alter debt service already settled in
+`t`. Before twelve months of model CPI exist, the configured initial policy rate is held.
+
+Nominal mortgages, indexed mortgages, deposits, and bank funding have separate pass-through
+coefficients. The two mortgage channels also have independent reset intervals. Economy mortgages
+are policy-linked: at a reset, their coupon is reconstructed from its opening nominal or indexed
+coupon plus the configured share of the policy-rate change from the opening policy rate. Mixed
+indexation contracts use the same alpha to blend those two coupon channels. Isolated contracts in
+the mortgage engine remain fixed-rate unless a caller explicitly supplies a reset coupon; CPI
+principal revaluation never changes the coupon itself.
+
+`EconomySimulationResult.policy_events` records the inflation observation, unconstrained rule,
+bounds, decision, and effective month. `rate_reset_events` links each channel reset to its source
+decision. Monthly aggregate and household outputs record the applicable rates and mortgage
+interest, keeping rate-driven debt service separate from CPI-driven principal revaluation. These
+are stylized mechanism assumptions for controlled experiments, not claims about empirical Icelandic
+pass-through magnitudes.
