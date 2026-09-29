@@ -65,12 +65,43 @@ export interface ReplayBundleV1 {
   }>;
   representative_agents: Array<{
     regime: ReplayRegime;
+    cohort: string;
     household_id: string;
     matched_household_id: string;
-    track: Array<{ month: string }>;
+    track: Array<{
+      month: string;
+      wage_income_isk: number;
+      consumption_isk: number;
+      deposits_isk: number;
+      mortgage_principal_isk: number;
+      mortgage_payment_isk: number;
+      mortgage_revaluation_isk: number;
+      arrears_isk: number;
+      defaulted: boolean;
+    }>;
   }>;
-  aggregate_series: unknown[];
-  distribution_series: unknown[];
+  aggregate_series: Array<{
+    regime: ReplayRegime;
+    name: string;
+    unit: string;
+    nominal_status: string;
+    points: Array<{ month: string; value: number | null }>;
+  }>;
+  distribution_series: Array<{
+    regime: ReplayRegime;
+    month: string;
+    dimension: string;
+    cohort: string;
+    households: number;
+    income_isk: number;
+    consumption_isk: number;
+    deposits_isk: number;
+    mortgage_principal_isk: number;
+    mortgage_revaluation_isk: number;
+    debt_service_isk: number;
+    net_worth_isk: number;
+    defaults: number;
+  }>;
   scenario_pairing: object;
 }
 

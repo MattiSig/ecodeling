@@ -63,6 +63,56 @@ test("reports reduced motion in the component shell", async ({
   await expect(page.getByText("Reduced motion")).toBeVisible();
 });
 
+test("plays recorded months and preserves the month between modes", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "desktop interaction trace");
+  const experience = page.locator("ecodeling-experience");
+  const range = experience.getByRole("slider", { name: "Simulation month" });
+  await experience
+    .getByRole("button", { name: "The price index rewrites debt" })
+    .click();
+  await expect(range).toHaveValue("5");
+  await experience.getByRole("button", { name: "Explore" }).click();
+  await expect(range).toHaveValue("5");
+  await experience.getByLabel("Playback speed").selectOption("2");
+  await experience.getByRole("button", { name: "Play" }).click();
+  await expect(range).toHaveValue("6", { timeout: 2_000 });
+  await experience.getByRole("button", { name: "Pause" }).click();
+});
+
+test("inspects recorded sector and representative values", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "desktop inspection trace");
+  const experience = page.locator("ecodeling-experience");
+  await experience.getByRole("button", { name: /^Households/ }).click();
+  await expect(experience.getByText("Financial assets")).toBeVisible();
+  await experience
+    .getByRole("button", { name: /low income high ltv borrower/ })
+    .click();
+  await expect(experience.getByText("Mortgage", { exact: true })).toBeVisible();
+  await expect(
+    experience
+      .locator(".inspection-card code")
+      .getByText("worker-household-00005"),
+  ).toBeVisible();
+});
+
+test("matches the deterministic economy-scene baseline", async ({ page }) => {
+  const experience = page.locator("ecodeling-experience");
+  await experience.evaluate((element) => element.setAttribute("static", ""));
+  await experience
+    .getByRole("button", { name: "Imported inputs cost more" })
+    .click();
+  await expect(experience.locator(".flow-layer line")).toHaveCount(6);
+  await expect(experience.locator(".flow-layer line").first()).toBeVisible();
+  await expect(experience.locator(".stage")).toHaveScreenshot(
+    "economy-scene.png",
+    { animations: "disabled", caret: "hide" },
+  );
+});
+
 test("still embeds the internal audit page", async ({ page }) => {
   await page.goto("/web/internal-audit/");
   await expect(

@@ -22,7 +22,10 @@ Attributes:
 - `initial-month`: an optional replay month selected after validation.
 - `static`: disables nonessential motion independently of the operating-system preference.
 
-Public methods are `reload()`, `setMonth(index)`, and `select(selection)`. The element emits
+Public methods are `reload()`, `setMonth(index)`, `select(selection)`, `play()`, `pause()`, and
+`restart()`. Story and Explore share the selected month, so leaving a guided scene for inspection
+does not rewind the replay. Playback speed changes presentation timing only; every step advances
+to the next recorded month. The element emits
 composed, bubbling `ecodeling-ready`, `ecodeling-month-change`,
 `ecodeling-selection-change`, and `ecodeling-error` custom events. Error details distinguish
 network, decoding, and replay-compatibility failures. A host may provide static content through
@@ -38,6 +41,20 @@ flow marks are paths with directional endpoints. Charts use moss axes, exact tab
 nominal lines, and dashed indexed lines so color is never the only regime cue. Spacing follows a
 4/8/16/32-pixel rhythm and motion uses gentle 300–500 ms easing. Reduced-motion and `static`
 replace continuous movement with discrete state changes.
+
+## Story and inspection
+
+The six guided scenes are derived from replay contents: the first month, first `FX_SHOCK`, first
+post-shock import flow, first CPI movement, first `CPI_REVALUATION`, and first recorded feedback
+event. Scene copy names the underlying table or event, and selecting a scene moves the shared
+timeline to that source month. The nominal story explicitly reports the absence of CPI principal
+revaluation rather than inventing an equivalent event.
+
+The economic circuit renders aggregate flows for the active regime and month. Line width is a
+presentation scale of recorded ISK amounts; direction, amount, counterpart sectors, and ledger
+entry remain available in exact-value labels and the flow table. Sector stocks, typed events, and
+representative-household tracks come directly from the replay. Government and central-bank stocks
+say “not modeled” when the bundle contains `null`; the interface never substitutes zero.
 
 ## Commands
 

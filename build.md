@@ -264,16 +264,16 @@ Verification gate: frontend quality suite and Playwright checks at representativ
 
 Acceptance: the host site can embed a robust empty experience and load the canonical replay through a stable component API.
 
-## [ ] Phase 14 — Animated economy, Story mode, and Explore mode
+## [x] Phase 14 — Animated economy, Story mode, and Explore mode
 
 References: `specs/20_blog_post_plan.md`, `specs/22_interactive_web_experience.md`
 
-- [ ] Render households, firms, banks, government, central bank, foreign sector/harbor, CPI, and clock.
-- [ ] Animate recorded aggregate flows while keeping stock and flow encodings distinct.
-- [ ] Implement play, pause, restart, speed, scrubber, markers, exact-value tooltips, and sector/agent inspection.
-- [ ] Implement guided scenes for shock → imports → prices → CPI → debt → household/bank feedback.
-- [ ] Preserve the current month when moving between Story and Explore modes.
-- [ ] Add deterministic animation, interaction, screenshot, mobile, and reduced-motion tests.
+- [x] Render households, firms, banks, government, central bank, foreign sector/harbor, CPI, and clock.
+- [x] Animate recorded aggregate flows while keeping stock and flow encodings distinct.
+- [x] Implement play, pause, restart, speed, scrubber, markers, exact-value tooltips, and sector/agent inspection.
+- [x] Implement guided scenes for shock → imports → prices → CPI → debt → household/bank feedback.
+- [x] Preserve the current month when moving between Story and Explore modes.
+- [x] Add deterministic animation, interaction, screenshot, mobile, and reduced-motion tests.
 
 Verification gate: frontend suite, visual regression baselines, and manual trace of every guided scene to replay data.
 
@@ -406,3 +406,8 @@ Notes: Promoted the browser boundary to a strict paired schema v1 while retainin
 Baseline: 008dd3ca5e69924bfa54bc1813bfe0cd3f38c9b6
 Verification: `uv sync --all-groups`; `uv run pytest` (90 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm ci`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (2 legacy/contract and 8 Vitest tests passed); `npm run build:web`; `npm run test:browser` (11 passed across desktop, mobile, and reduced-motion projects; 4 project-specific skips); `npm audit` (0 vulnerabilities); `git diff --check` (all passed)
 Notes: Added an embeddable Lit custom element whose stable attributes, methods, composed events, and fallback slot expose validated replay-v1 loading plus independent timeline and selection state without implementing economic transitions. JSON and gzip inputs fail into typed network, decoding, or compatibility states; published provenance remains visible after successful validation. The Organic visual system packages Fraunces and defines sand/sage/clay sector geometry, distinct future stock/flow and chart conventions, a responsive month ribbon, keyboard navigation, static mode, and reduced-motion behavior. Vitest and Playwright cover component state, loading failures, accessibility, responsive containment, keyboard operation, reduced motion, and compatibility with the existing internal audit page. CI now runs the complete frontend quality and production-build gate, and the pinned dependency tree has no known advisories.
+
+2026-09-29 — Phase 14 — COMPLETE
+Baseline: d7df2dba1e09dbd6bcfaf63f4b4126b469defa04
+Verification: `uv sync --all-groups`; `uv run pytest` (90 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (5 legacy/contract and 10 Vitest tests passed); `npm run build:web`; `npm run test:browser` (16 passed across desktop, mobile, and reduced-motion projects; 8 project-specific skips); `git diff --check` (all passed)
+Notes: Replaced the empty public stage with a replay-driven Organic economic circuit containing all six sectors, CPI, simulation month, distinct stock silhouettes, scaled aggregate-flow paths, exact values, ledger identifiers, typed events, and deterministic representative-household inspection. Story scenes derive their source months from the first replay month, FX shock, post-shock import flow, CPI movement, CPI revaluation, and feedback event; manual and automated traces confirmed the canonical chain without presentation-invented transactions. Story and Explore share timeline state; playback provides play, pause, restart, speed, scrub, event markers, keyboard controls, off-screen pausing, discrete reduced-motion behavior, and static fallbacks. Deterministic desktop, mobile, and reduced-motion screenshots plus accessibility and interaction tests lock the rendered circuit to the canonical replay.
