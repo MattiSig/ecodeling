@@ -250,6 +250,20 @@ The canonical development host is available at `/web/public/` under `npm run dev
 events, methods, fallback slots, and the visual encoding system are documented in
 [`web/public/README.md`](web/public/README.md).
 
+### CV publication
+
+The public experience is hosted by `MattiSig/cv` at `/work/ecodeling`. It is not a separate
+Ecodeling deployment. Export a verified static bundle into a CV checkout with:
+
+```bash
+scripts/export-cv-assets.sh /path/to/cv/web/static/ecodeling
+```
+
+The handoff vendors the component JavaScript, minimal host CSS, canonical gzip replay, and
+`SHA256SUMS`. The CV Go application embeds those files and versions their URLs by content hash. The
+component inherits the profile's background, foreground, muted, rule, and accent tokens, so its
+Industrial interface follows both site themes without shipping another font.
+
 ## Bounded simulation service and Laboratory
 
 Phase 16 exposes custom experiments through a FastAPI service while keeping Python as the only
@@ -273,10 +287,12 @@ hash. Identical concurrent requests therefore share one job, completed responses
 and a failed or safely cancelled identity can be retried. Set `ECODELING_SERVICE_DATA` to relocate
 service state. `GET /docs` publishes the exact request and response schema.
 
-The component's Laboratory mode uses `/api/v1` by default; hosts can set `api-base`. A custom
-failure never replaces the canonical replay, and a successful custom replay can be replaced with
-the canonical publication using “Restore canonical replay.” Running jobs are not forcibly killed;
-cancellation succeeds only while an executor future is still safely queued.
+Laboratory mode is disabled unless a host explicitly sets `api-base`; the development page sets it
+to `/api/v1`. The CV publication intentionally omits it and therefore serves Story, Explore, and
+Compare without making failed requests to an undeployed Python API. A custom failure never
+replaces the canonical replay, and a successful custom replay can be replaced with the canonical
+publication using “Restore canonical replay.” Running jobs are not forcibly killed; cancellation
+succeeds only while an executor future is still safely queued.
 
 ## Endogenous firms, markets, and CPI
 

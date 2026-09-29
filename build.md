@@ -255,7 +255,7 @@ References: `specs/22_interactive_web_experience.md`
 
 - [x] Create the Vite/Lit/TypeScript package with D3, Vitest, Playwright, formatting, linting, and type checks.
 - [x] Implement replay loading, validation, timeline state, selection state, and error boundaries.
-- [x] Define the visual system: typography, colors, sector shapes, flow/stock encodings, spacing, motion, and chart conventions.
+- [x] Define the host-inheritable Industrial visual system: JetBrains Mono, profile-site tokens, flat ruled panels, one signal color, flow/stock encodings, spacing, motion, and chart conventions.
 - [x] Implement responsive shell, loading/error/static states, keyboard operation, and reduced-motion primitives.
 - [x] Package the experience as an embeddable custom element with documented attributes and events.
 - [x] Add component, accessibility, responsive, and embedding tests.
@@ -317,7 +317,8 @@ References: all specifications, especially `specs/16_validation_and_testing.md`,
 - [ ] Audit empirical statements and calibration inputs against primary sources.
 - [ ] Complete static figure, reduced-motion, textual, and recorded-video fallbacks.
 - [ ] Performance-test canonical loading, playback, and bounded custom jobs; document operating limits.
-- [ ] Complete deployment, backup/cache cleanup, observability, security, and rollback documentation.
+- [ ] Complete deployment, backup/cache cleanup, observability, security, and rollback documentation for the CV-owned `/work/ecodeling` route and its vendored assets.
+- [ ] Verify the production CV page, health endpoint, hashed component assets, canonical replay, dark/light host themes, and absence of Laboratory requests when `api-base` is omitted.
 - [ ] Publish versioned canonical configurations, outputs, replay bundle, methodology, limitations, and reproducibility box.
 - [ ] Tag the release only after every v0.1 definition-of-done item in `specs/README.md` is verified.
 
@@ -421,3 +422,8 @@ Notes: Added replay-validated nominal, indexed, and split-screen Compare views o
 Baseline: aeb7d7e584925b74a67cc674f0e03a3427bcee34
 Verification: `uv sync --all-groups`; `uv run pytest` (94 passed, including API validation/resource limits, collisions, bounded capacity, cancellation, failure/retry, immutable cache, and full simulation/replay cases); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (2 legacy/contract and 17 Vitest tests passed); `npm run build:web`; `npm run test:browser` (19 passed across desktop, mobile, and reduced-motion projects; 14 project-specific skips, including a real browser → API → worker-process simulation → replay workflow); `git diff --check` (all passed)
 Notes: Added a strict allowlisted experiment API with bounded request size, months, population, firms, pending work, worker processes, and replay bytes. FastAPI create/status/result/cancel endpoints expose structured validation and failure states; safe cancellation never kills a running artifact writer. Jobs use the installed Python model in a ProcessPoolExecutor, publish replay-v1 gzip artifacts atomically, and store restart-aware SQLite metadata keyed by model version plus the complete canonical configuration hash, so colliding requests share work and completed results are immutable. Laboratory mode provides bounded controls, polling progress, safe cancellation, retry, provenance, and canonical restoration; a failed or invalid custom result never replaces the published replay. The production-like browser gate starts both Vite and the Python service, and the inspected one-pixel mobile reflow from the fourth mode tab is recorded in the refreshed deterministic baseline.
+
+2026-09-29 — Phase 16 — COMPLETE (publication integration follow-up)
+Baseline: fe0dcd4785018f1ee90ad942bb6b80aa7cb67b21
+Verification: `npm run format:check`; `npm run typecheck:web`; `npm run lint:web`; `npm test` (5 legacy/contract and 18 Vitest tests passed); `npm run build:web`; `ECODELING_API_PORT=8865 ECODELING_WEB_PORT=4273 npm run test:browser` (19 passed, 14 project-specific skips); CV `make validate`; exported `sha256sum -c SHA256SUMS`; local production-style desktop/mobile and dark/light browser inspection with no console errors; Railway health and `/work/ecodeling` returned 200 for the first publication.
+Notes: Changed the publication boundary after the phase implementation. `MattiSig/cv` now owns the native `/work/ecodeling` route and Railway service, while this repository exports checksummed JavaScript, CSS, and the immutable canonical replay through `scripts/export-cv-assets.sh`. The CV page omits `api-base`, so Laboratory is hidden and canonical Story/Explore/Compare playback has no Python-service dependency. The original Organic/Fraunces presentation recorded in the Phase 13–15 history was superseded by a host-inheritable Industrial system using JetBrains Mono, the profile's dark/light tokens, flat one-pixel rules, and gold only for active/model signals. Commits `a9c11ef` and `ebad869` implement the source-side handoff and theme; CV commits `6ff7053` and `52a7391` contain the host route and vendored assets.

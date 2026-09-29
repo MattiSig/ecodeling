@@ -47,6 +47,7 @@ The first implementation should be deliberately small. The goal is **not** to re
 6. **Measure distribution as well as aggregates.** Indexation can redistribute risk and wealth even if GDP barely changes.
 7. **Treat conclusions as model-dependent.** The simulation is a laboratory for mechanisms, not an oracle about policy.
 8. **Animate recorded outcomes, not invented stories.** Every visual state and flow must be traceable to simulation output.
+9. **Publish through an explicit host boundary.** Ecodeling owns the replay component and checked assets; the CV site owns the public route, surrounding page, theme tokens, and Railway deployment.
 
 ## Version 0.1 in one paragraph
 
@@ -66,6 +67,7 @@ The first milestone is complete when:
 - regime comparisons use the same shock sequence;
 - output tables contain the required core metrics;
 - a versioned replay export can drive the browser visualization without executing economic logic in the frontend;
+- the checksummed replay component can be vendored into the CV site and load at `/work/ecodeling` without a Python service;
 - unit tests verify accounting identities and contract update rules.
 
 ## Naming convention
