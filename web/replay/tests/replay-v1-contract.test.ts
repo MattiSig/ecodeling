@@ -47,4 +47,25 @@ test("contract rejects incompatible, oversized, and drifting bundles", () => {
     () => validateReplayV1({ ...bundle, timeline: bundle.timeline.slice(1) }),
     /not aligned/,
   );
+  assert.throws(
+    () =>
+      validateReplayV1({
+        ...bundle,
+        scenario_pairing: {
+          ...bundle.scenario_pairing,
+          indexed_run_id: "unrelated-run",
+        },
+      }),
+    /pairing metadata is invalid/,
+  );
+  assert.throws(
+    () =>
+      validateReplayV1({
+        ...bundle,
+        aggregate_series: bundle.aggregate_series.map((series, index) =>
+          index === 0 ? { ...series, points: series.points.slice(1) } : series,
+        ),
+      }),
+    /series timeline is not aligned/,
+  );
 });

@@ -7,6 +7,17 @@ export type ReplaySector =
   | "central_bank"
   | "foreign";
 
+export interface ReplayScenarioPairingV1 {
+  nominal_run_id: string;
+  indexed_run_id: string;
+  shared_seed: number;
+  shared_initialization: boolean;
+  shared_shock_path: boolean;
+  shared_random_streams: string[];
+  structural_difference: string;
+  matching: string;
+}
+
 export interface ReplayManifestV1 {
   schema_version: 1;
   bundle_id: string;
@@ -20,8 +31,17 @@ export interface ReplayManifestV1 {
 
 export interface ReplayBundleV1 {
   manifest: ReplayManifestV1;
-  timeline: Array<{ index: number; month: string; shock: boolean; policy_decision: boolean }>;
-  runs: Array<{ regime: ReplayRegime; run_id: string; configuration_hash: string }>;
+  timeline: Array<{
+    index: number;
+    month: string;
+    shock: boolean;
+    policy_decision: boolean;
+  }>;
+  runs: Array<{
+    regime: ReplayRegime;
+    run_id: string;
+    configuration_hash: string;
+  }>;
   sector_snapshots: Array<{
     regime: ReplayRegime;
     month: string;
@@ -102,8 +122,11 @@ export interface ReplayBundleV1 {
     net_worth_isk: number;
     defaults: number;
   }>;
-  scenario_pairing: object;
+  scenario_pairing: ReplayScenarioPairingV1;
 }
 
 export class ReplayCompatibilityError extends Error {}
-export function validateReplayV1(bundle: unknown, byteLength?: number): ReplayBundleV1;
+export function validateReplayV1(
+  bundle: unknown,
+  byteLength?: number,
+): ReplayBundleV1;

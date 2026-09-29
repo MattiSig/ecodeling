@@ -18,10 +18,18 @@ import {
   storyScenes,
   type StoryScene,
 } from "./replay-presenter.js";
+import {
+  cohortDifferences,
+  COMPARISON_METRICS,
+  pairedSeries,
+  representativeComparison,
+  type CohortMeasure,
+} from "./replay-comparison.js";
 import { ReplayState, type ReplaySelection } from "./replay-state.js";
 
 type LoadStatus = "empty" | "loading" | "ready" | "error";
-type ExperienceMode = "story" | "explore";
+type ExperienceMode = "story" | "explore" | "compare";
+type ComparisonView = ReplayRegime | "split";
 
 export interface EcodelingReadyDetail {
   bundleId: string;
@@ -72,6 +80,11 @@ export class EcodelingExperience extends LitElement {
   @state() private speed = 1;
   @state() private storyIndex = 0;
   @state() private activeRegime: ReplayRegime = "indexed";
+  @state() private comparisonView: ComparisonView = "split";
+  @state() private selectedMetric = "cpi_level";
+  @state() private cohortDimension = "income_quintile";
+  @state() private cohortMeasure: CohortMeasure = "consumption_isk";
+  @state() private cameraSector: ReplaySector = "households";
   @state() private visible = true;
 
   readonly replayState = new ReplayState();
@@ -355,7 +368,7 @@ export class EcodelingExperience extends LitElement {
     return html`
       <section class="ready">
         <nav class="mode-tabs" aria-label="Experience mode">
-          ${(["story", "explore"] as const).map(
+          ${(["story", "explore", "compare"] as const).map(
             (mode) =>
               html`<button
                 type="button"
@@ -363,7 +376,11 @@ export class EcodelingExperience extends LitElement {
                 aria-current=${this.mode === mode ? "page" : nothing}
                 @click=${() => (this.mode = mode)}
               >
-                ${mode === "story" ? "Story" : "Explore"}
+                ${mode === "story"
+                  ? "Story"
+                  : mode === "explore"
+                    ? "Explore"
+                    : "Compare"}
               </button>`,
           )}
           <span
@@ -444,12 +461,17 @@ export class EcodelingExperience extends LitElement {
             : nothing}
         </div>
 
-        ${this.mode === "story" ? this.#renderStory(scenes, scene) : nothing}
-        <div class="shell-grid">
-          ${this.#renderEconomy(replay, month, scene)}
-          ${this.#renderInspector(replay, month)}
-        </div>
-        ${this.#renderMetrics(replay, month)} ${this.#renderProvenance(replay)}
+        ${this.mode === "compare"
+          ? this.#renderComparison(replay, month)
+          : html`${this.mode === "story"
+                ? this.#renderStory(scenes, scene)
+                : nothing}
+              <div class="shell-grid">
+                ${this.#renderEconomy(replay, month, scene)}
+                ${this.#renderInspector(replay, month)}
+              </div>
+              ${this.#renderMetrics(replay, month)}`}
+        ${this.#renderProvenance(replay)}
       </section>
     `;
   }
@@ -783,6 +805,385 @@ export class EcodelingExperience extends LitElement {
         </div>`;
       })}
     </section>`;
+  }
+
+  #renderComparison(replay: ReplayBundleV1, month: string) {
+    const paired = pairedSeries(replay, this.selectedMetric);
+    const point = paired?.points[this.replayState.monthIndex];
+    const dimensions = [
+      ...new Set(replay.distribution_series.map((item) => item.dimension)),
+    ];
+    const cohorts = cohortDifferences(
+      replay,
+      month,
+      this.cohortDimension,
+      this.cohortMeasure,
+    );
+    const selectedAgentId =
+      this.replayState.selection?.kind === "agent"
+        ? this.replayState.selection.id
+        : null;
+    const selectedAgent = selectedAgentId
+      ? replay.representative_agents.find(
+          (agent) => agent.household_id === selectedAgentId,
+        )
+      : undefined;
+    const representative = selectedAgent
+      ? representativeComparison(
+          replay,
+          selectedAgent.regime,
+          selectedAgent.household_id,
+        )
+      : null;
+    return html`<section class="comparison" aria-labelledby="compare-title">
+      <div class="compare-heading">
+        <div>
+          <p class="eyebrow">Paired experiment</p>
+          <h2 id="compare-title">One clock, two contract structures</h2>
+          <p>
+            Indexed minus nominal differences use the nominal run as the
+            baseline. Both runs share seed
+            ${replay.scenario_pairing.shared_seed} and the recorded shock path.
+          </p>
+        </div>
+        <div class="view-toggle" aria-label="Comparison view">
+          ${(["nominal", "split", "indexed"] as const).map(
+            (view) =>
+              html`<button
+                type="button"
+                aria-pressed=${this.comparisonView === view ? "true" : "false"}
+                @click=${() => {
+                  this.comparisonView = view;
+                  if (view !== "split") this.activeRegime = view;
+                }}
+              >
+                ${view === "split"
+                  ? "Split screen"
+                  : view === "nominal"
+                    ? "Nominal"
+                    : "Indexed"}
+              </button>`,
+          )}
+        </div>
+      </div>
+
+      <div class=${`paired-scenes ${this.comparisonView}`}>
+        ${this.comparisonView !== "indexed"
+          ? this.#renderComparisonRun(replay, "nominal", month)
+          : nothing}
+        ${this.comparisonView !== "nominal"
+          ? this.#renderComparisonRun(replay, "indexed", month)
+          : nothing}
+      </div>
+
+      <section class="chart-panel" aria-labelledby="chart-title">
+        <div class="chart-heading">
+          <div>
+            <p class="eyebrow">Synchronized analytical chart</p>
+            <h3 id="chart-title">
+              ${COMPARISON_METRICS.find(
+                (metric) => metric.name === this.selectedMetric,
+              )?.label}
+            </h3>
+          </div>
+          <label
+            >Metric<select
+              aria-label="Comparison metric"
+              .value=${this.selectedMetric}
+              @change=${(event: Event) =>
+                (this.selectedMetric = (
+                  event.currentTarget as HTMLSelectElement
+                ).value)}
+            >
+              ${COMPARISON_METRICS.map(
+                (metric) =>
+                  html`<option value=${metric.name}>${metric.label}</option>`,
+              )}
+            </select></label
+          >
+        </div>
+        ${paired
+          ? html`${this.#renderPairedChart(paired.points, paired.unit, month)}
+              <div class="difference-readout" aria-live="polite">
+                <div>
+                  <span>Nominal</span
+                  ><strong
+                    >${formatValue(point?.nominal ?? null, paired.unit)}</strong
+                  >
+                </div>
+                <div>
+                  <span>Indexed</span
+                  ><strong
+                    >${formatValue(point?.indexed ?? null, paired.unit)}</strong
+                  >
+                </div>
+                <div class="difference">
+                  <span>Indexed − nominal</span
+                  ><strong
+                    >${this.#formatDifference(
+                      point?.difference ?? null,
+                      paired.unit,
+                    )}</strong
+                  ><small>Nominal baseline, ${month}</small>
+                </div>
+              </div>`
+          : html`<p>This paired metric is not available in the replay.</p>`}
+      </section>
+
+      <div class="comparison-detail-grid">
+        <section class="cohort-panel" aria-labelledby="cohort-title">
+          <div class="chart-heading">
+            <div>
+              <p class="eyebrow">Declared cohort comparison</p>
+              <h3 id="cohort-title">Distribution at ${month}</h3>
+            </div>
+            <div class="cohort-controls">
+              <label
+                >Cohort dimension<select
+                  aria-label="Cohort dimension"
+                  .value=${this.cohortDimension}
+                  @change=${(event: Event) =>
+                    (this.cohortDimension = (
+                      event.currentTarget as HTMLSelectElement
+                    ).value)}
+                >
+                  ${dimensions.map(
+                    (dimension) =>
+                      html`<option value=${dimension}>
+                        ${dimension.replaceAll("_", " ")}
+                      </option>`,
+                  )}
+                </select></label
+              >
+              <label
+                >Measure<select
+                  aria-label="Cohort measure"
+                  .value=${this.cohortMeasure}
+                  @change=${(event: Event) =>
+                    (this.cohortMeasure = (
+                      event.currentTarget as HTMLSelectElement
+                    ).value as CohortMeasure)}
+                >
+                  <option value="consumption_isk">Consumption</option>
+                  <option value="mortgage_principal_isk">
+                    Mortgage principal
+                  </option>
+                  <option value="debt_service_isk">Debt service</option>
+                  <option value="net_worth_isk">Net worth</option>
+                  <option value="defaults">Defaults</option>
+                </select></label
+              >
+            </div>
+          </div>
+          <div class="cohort-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cohort</th>
+                  <th>Nominal</th>
+                  <th>Indexed</th>
+                  <th>Indexed − nominal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${cohorts.map(
+                  (cohort) =>
+                    html`<tr>
+                      <td>${cohort.cohort.replaceAll("_", " ")}</td>
+                      <td>
+                        ${formatValue(
+                          cohort.nominal,
+                          this.cohortMeasure === "defaults"
+                            ? "households"
+                            : "ISK",
+                        )}
+                      </td>
+                      <td>
+                        ${formatValue(
+                          cohort.indexed,
+                          this.cohortMeasure === "defaults"
+                            ? "households"
+                            : "ISK",
+                        )}
+                      </td>
+                      <td>
+                        ${this.#formatDifference(
+                          cohort.difference,
+                          this.cohortMeasure === "defaults"
+                            ? "households"
+                            : "ISK",
+                        )}
+                      </td>
+                    </tr>`,
+                )}
+              </tbody>
+            </table>
+          </div>
+          <p class="baseline-note">
+            Values are recorded cohort totals; differences use nominal as the
+            baseline. Units are
+            ${this.cohortMeasure === "defaults"
+              ? "households"
+              : "nominal whole ISK"}.
+          </p>
+        </section>
+
+        <section class="matching-panel" aria-labelledby="matching-title">
+          <p class="eyebrow">Representative correspondence</p>
+          <h3 id="matching-title">Identity check</h3>
+          <p>
+            Select a nominal representative to verify whether the same simulated
+            household exists in both runs.
+          </p>
+          <div class="agent-list">
+            ${replay.representative_agents
+              .filter((agent) => agent.regime === "nominal")
+              .map(
+                (agent) =>
+                  html`<button
+                    type="button"
+                    aria-pressed=${selectedAgentId === agent.household_id
+                      ? "true"
+                      : "false"}
+                    @click=${() =>
+                      this.select({ kind: "agent", id: agent.household_id })}
+                  >
+                    <span>${agent.cohort.replaceAll("_", " ")}</span>
+                    <small>${agent.household_id}</small>
+                  </button>`,
+              )}
+          </div>
+          ${representative
+            ? html`<div class="match-result" role="status">
+                <strong
+                  >${representative.kind === "individual"
+                    ? "Matched individual"
+                    : "Cohort comparison only"}</strong
+                >
+                <p>
+                  ${representative.kind === "individual"
+                    ? `Stable identity ${representative.nominalId} is present in both regimes.`
+                    : `The identities do not correspond. Comparing the declared ${representative.cohort.replaceAll("_", " ")} cohort instead.`}
+                </p>
+              </div>`
+            : nothing}
+        </section>
+      </div>
+    </section>`;
+  }
+
+  #renderComparisonRun(
+    replay: ReplayBundleV1,
+    regime: ReplayRegime,
+    month: string,
+  ) {
+    const run = replay.runs.find((candidate) => candidate.regime === regime)!;
+    return html`<article
+      class=${`run-panel ${regime}`}
+      aria-label=${`${regime} economy at ${month}`}
+    >
+      <div class="run-heading">
+        <div>
+          <span>${regime === "nominal" ? "Nominal" : "Indexed"}</span>
+          <strong>${month}</strong>
+        </div>
+        <small>${run.run_id}</small>
+      </div>
+      <p class="camera-label">
+        Shared camera: ${SECTOR_LABELS[this.cameraSector]}
+      </p>
+      <div class="sector-comparison" aria-label="Shared sector camera">
+        ${SECTORS.map((sector) => {
+          const snapshot = replay.sector_snapshots.find(
+            (item) =>
+              item.regime === regime &&
+              item.month === month &&
+              item.sector === sector,
+          );
+          return html`<button
+            type="button"
+            aria-pressed=${this.cameraSector === sector ? "true" : "false"}
+            @click=${() => {
+              this.cameraSector = sector;
+              this.select({ kind: "sector", id: sector });
+            }}
+          >
+            <span>${SECTOR_LABELS[sector]}</span>
+            <strong>${formatValue(snapshot?.equity_isk ?? null, "ISK")}</strong>
+            <small>equity</small>
+          </button>`;
+        })}
+      </div>
+    </article>`;
+  }
+
+  #renderPairedChart(
+    points: Array<{
+      month: string;
+      nominal: number | null;
+      indexed: number | null;
+    }>,
+    unit: string,
+    month: string,
+  ) {
+    const values = points.flatMap((point) =>
+      [point.nominal, point.indexed].filter(
+        (value): value is number => value !== null,
+      ),
+    );
+    const minimum = values.length > 0 ? Math.min(...values) : 0;
+    const maximum = values.length > 0 ? Math.max(...values) : 1;
+    const spread = maximum - minimum || 1;
+    const path = (key: "nominal" | "indexed") => {
+      let started = false;
+      return points
+        .map((point, index) => {
+          const value = point[key];
+          if (value === null) {
+            started = false;
+            return "";
+          }
+          const x = 6 + (index / Math.max(points.length - 1, 1)) * 88;
+          const y = 90 - ((value - minimum) / spread) * 76;
+          const command = started ? "L" : "M";
+          started = true;
+          return `${command}${x.toFixed(2)},${y.toFixed(2)}`;
+        })
+        .join(" ");
+    };
+    const cursorX =
+      6 + (this.replayState.monthIndex / Math.max(points.length - 1, 1)) * 88;
+    return html`<div class="paired-chart">
+      <svg
+        viewBox="0 0 100 100"
+        role="img"
+        aria-label=${`Nominal and indexed ${this.selectedMetric} across ${points.length} aligned months; current month ${month}`}
+        preserveAspectRatio="none"
+      >
+        <line class="chart-axis" x1="6" y1="90" x2="94" y2="90"></line>
+        <line class="chart-axis" x1="6" y1="14" x2="6" y2="90"></line>
+        <path class="nominal-line" d=${path("nominal")}></path>
+        <path class="indexed-line" d=${path("indexed")}></path>
+        <line
+          class="shared-cursor"
+          x1=${cursorX}
+          x2=${cursorX}
+          y1="10"
+          y2="94"
+        ></line>
+      </svg>
+      <div class="chart-legend">
+        <span class="nominal-key">Nominal — solid</span>
+        <span class="indexed-key">Indexed — dashed</span>
+        <span>${unit}</span>
+      </div>
+    </div>`;
+  }
+
+  #formatDifference(value: number | null, unit: string): string {
+    if (value === null) return "Not available";
+    if (value === 0) return formatValue(0, unit);
+    return `${value > 0 ? "+" : "−"}${formatValue(Math.abs(value), unit)}`;
   }
 
   #renderProvenance(replay: ReplayBundleV1) {
@@ -1396,6 +1797,252 @@ export class EcodelingExperience extends LitElement {
       font-size: clamp(1rem, 2cqi, 1.5rem);
       font-variant-numeric: tabular-nums;
     }
+    .comparison {
+      display: grid;
+      gap: 1rem;
+    }
+    .compare-heading,
+    .chart-heading,
+    .run-heading {
+      display: flex;
+      gap: 1rem;
+      justify-content: space-between;
+      align-items: start;
+    }
+    .compare-heading {
+      padding: clamp(1.2rem, 3cqi, 2rem);
+      border-radius: 2rem;
+      background: var(--clay);
+    }
+    .compare-heading p:not(.eyebrow) {
+      max-width: 48rem;
+      margin-bottom: 0;
+      line-height: 1.45;
+    }
+    .view-toggle {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 0.35rem;
+    }
+    .view-toggle button {
+      min-height: 2.65rem;
+      padding: 0.55rem 0.85rem;
+      border: 1px solid var(--moss);
+      border-radius: 1rem;
+      background: var(--sand);
+      font-weight: 700;
+    }
+    .view-toggle button[aria-pressed="true"] {
+      color: var(--sand);
+      background: var(--moss);
+    }
+    .paired-scenes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .paired-scenes.nominal,
+    .paired-scenes.indexed {
+      grid-template-columns: 1fr;
+    }
+    .run-panel,
+    .chart-panel,
+    .cohort-panel,
+    .matching-panel {
+      min-width: 0;
+      padding: clamp(1rem, 2.5cqi, 1.7rem);
+      border-radius: 2rem;
+    }
+    .run-panel.nominal {
+      background: var(--sage);
+    }
+    .run-panel.indexed {
+      background: var(--oat);
+    }
+    .run-heading > div {
+      display: grid;
+    }
+    .run-heading span {
+      font-size: 0.72rem;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .run-heading strong {
+      font-size: clamp(1.45rem, 3cqi, 2.25rem);
+      font-variant-numeric: tabular-nums;
+    }
+    .run-heading small {
+      max-width: 18rem;
+      overflow-wrap: anywhere;
+      text-align: right;
+    }
+    .camera-label {
+      margin: 0.8rem 0 0.45rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .sector-comparison {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.45rem;
+    }
+    .sector-comparison button {
+      display: grid;
+      gap: 0.25rem;
+      min-width: 0;
+      min-height: 6rem;
+      padding: 0.65rem;
+      border: 1px solid var(--moss);
+      border-radius: 1.2rem;
+      background: var(--sand);
+      text-align: left;
+    }
+    .sector-comparison button[aria-pressed="true"] {
+      box-shadow: inset 0 0 0 0.2rem var(--moss);
+      transform: scale(1.02);
+    }
+    .sector-comparison span,
+    .sector-comparison small {
+      font-size: 0.68rem;
+    }
+    .sector-comparison strong {
+      overflow-wrap: anywhere;
+      font-size: clamp(0.78rem, 1.4cqi, 1rem);
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-panel {
+      background: var(--sage);
+    }
+    .chart-heading label,
+    .cohort-controls label {
+      display: grid;
+      gap: 0.2rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .chart-heading select,
+    .cohort-controls select {
+      min-height: 2.5rem;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid var(--moss);
+      border-radius: 0.85rem;
+      color: var(--moss);
+      background: var(--sand);
+    }
+    .paired-chart {
+      margin-top: 0.8rem;
+      padding: 0.6rem;
+      border-radius: 1.5rem;
+      background: var(--sand);
+    }
+    .paired-chart svg {
+      display: block;
+      width: 100%;
+      height: clamp(12rem, 26cqi, 21rem);
+      overflow: visible;
+    }
+    .paired-chart path,
+    .paired-chart line {
+      vector-effect: non-scaling-stroke;
+    }
+    .chart-axis {
+      stroke: var(--moss);
+      stroke-width: 1;
+      opacity: 0.45;
+    }
+    .nominal-line,
+    .indexed-line {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .nominal-line {
+      stroke: var(--moss);
+    }
+    .indexed-line {
+      stroke: var(--terracotta);
+      stroke-dasharray: 8 5;
+    }
+    .shared-cursor {
+      stroke: var(--ochre);
+      stroke-width: 3;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      padding: 0.4rem 0.3rem 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .chart-legend span:last-child {
+      margin-left: auto;
+    }
+    .difference-readout {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-top: 0.65rem;
+    }
+    .difference-readout > div {
+      display: grid;
+      gap: 0.15rem;
+      padding: 0.75rem;
+      border-radius: 1rem;
+      background: var(--sand);
+    }
+    .difference-readout .difference {
+      background: var(--oat);
+    }
+    .difference-readout span,
+    .difference-readout small {
+      font-size: 0.68rem;
+    }
+    .difference-readout strong {
+      overflow-wrap: anywhere;
+      font-size: clamp(1rem, 2cqi, 1.45rem);
+      font-variant-numeric: tabular-nums;
+    }
+    .comparison-detail-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 0.5fr);
+      gap: 1rem;
+    }
+    .cohort-panel {
+      background: var(--clay);
+    }
+    .matching-panel {
+      background: var(--oat);
+    }
+    .cohort-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+    .cohort-table-wrap {
+      overflow-x: auto;
+    }
+    .cohort-table-wrap td:not(:first-child) {
+      font-variant-numeric: tabular-nums;
+    }
+    .cohort-table-wrap td:first-child {
+      text-transform: capitalize;
+    }
+    .baseline-note,
+    .matching-panel > p:not(.eyebrow),
+    .match-result p {
+      margin: 0.75rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+    .match-result {
+      margin-top: 0.75rem;
+      padding: 0.8rem;
+      border-radius: 1rem;
+      background: var(--sand);
+    }
     .provenance {
       margin-top: 1rem;
       background: var(--oat);
@@ -1408,7 +2055,8 @@ export class EcodelingExperience extends LitElement {
     @container (max-width: 800px) {
       .masthead,
       .shell-grid,
-      .story-panel {
+      .story-panel,
+      .comparison-detail-grid {
         grid-template-columns: 1fr;
       }
       .month-ribbon {
@@ -1442,6 +2090,24 @@ export class EcodelingExperience extends LitElement {
       }
       .playback-controls {
         flex-wrap: wrap;
+      }
+      .compare-heading,
+      .chart-heading,
+      .run-heading {
+        display: grid;
+      }
+      .view-toggle {
+        flex-wrap: wrap;
+      }
+      .paired-scenes,
+      .difference-readout {
+        grid-template-columns: 1fr;
+      }
+      .sector-comparison {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .run-heading small {
+        text-align: left;
       }
       .story-panel ol,
       .metric-strip {

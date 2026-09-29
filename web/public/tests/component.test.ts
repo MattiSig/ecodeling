@@ -28,7 +28,16 @@ const replay = {
   representative_agents: [],
   aggregate_series: [],
   distribution_series: [],
-  scenario_pairing: {},
+  scenario_pairing: {
+    nominal_run_id: "nominal-run",
+    indexed_run_id: "indexed-run",
+    shared_seed: 10,
+    shared_initialization: true,
+    shared_shock_path: true,
+    shared_random_streams: ["shocks"],
+    structural_difference: "mortgage_indexation_topology",
+    matching: "stable_household_id",
+  },
 };
 
 afterEach(() => {

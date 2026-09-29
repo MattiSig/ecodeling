@@ -23,9 +23,9 @@ Attributes:
 - `static`: disables nonessential motion independently of the operating-system preference.
 
 Public methods are `reload()`, `setMonth(index)`, `select(selection)`, `play()`, `pause()`, and
-`restart()`. Story and Explore share the selected month, so leaving a guided scene for inspection
-does not rewind the replay. Playback speed changes presentation timing only; every step advances
-to the next recorded month. The element emits
+`restart()`. Story, Explore, and Compare share the selected month, playback state, and selection,
+so changing modes does not rewind the replay. Playback speed changes presentation timing only;
+every step advances to the next recorded month. The element emits
 composed, bubbling `ecodeling-ready`, `ecodeling-month-change`,
 `ecodeling-selection-change`, and `ecodeling-error` custom events. Error details distinguish
 network, decoding, and replay-compatibility failures. A host may provide static content through
@@ -55,6 +55,22 @@ presentation scale of recorded ISK amounts; direction, amount, counterpart secto
 entry remain available in exact-value labels and the flow table. Sector stocks, typed events, and
 representative-household tracks come directly from the replay. Government and central-bank stocks
 say “not modeled” when the bundle contains `null`; the interface never substitutes zero.
+
+## Paired comparison
+
+Compare mode validates the replay's nominal/indexed run IDs, shared seed, initialization, shock
+path, named random streams, aggregate-series timelines, and units before rendering. Nominal,
+indexed, and split-screen views all use the component's one timeline state. Sector selection is a
+shared camera target across split panels, and one selected metric drives the chart and its exact
+month readout.
+
+The seven synchronized charts are CPI, policy rate, mortgage principal, debt service, consumption,
+defaults, and bank equity. Solid nominal and dashed indexed paths share a time axis; the ochre time
+rail follows the replay month. Every difference is explicitly `indexed − nominal`, names nominal as
+the baseline, and retains the replay unit. Distribution tables compare the declared cohort keys and
+label their values as cohort totals. Representative households are compared as individuals only
+when counterpart IDs are reciprocal; otherwise the interface says that identities do not
+correspond and falls back to the declared cohort rather than pairing unrelated people.
 
 ## Commands
 

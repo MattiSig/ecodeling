@@ -99,6 +99,74 @@ test("inspects recorded sector and representative values", async ({
   ).toBeVisible();
 });
 
+test("keeps paired playback, camera, selection, and charts synchronized", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "desktop comparison trace");
+  const experience = page.locator("ecodeling-experience");
+  const range = experience.getByRole("slider", { name: "Simulation month" });
+  await experience.getByRole("button", { name: "Compare" }).click();
+  await expect(
+    experience.getByRole("heading", {
+      name: "One clock, two contract structures",
+    }),
+  ).toBeVisible();
+  await experience
+    .getByRole("button", { name: "Nominal", exact: true })
+    .click();
+  await expect(experience.locator(".run-panel.nominal")).toBeVisible();
+  await expect(experience.locator(".run-panel.indexed")).toHaveCount(0);
+  await experience
+    .getByRole("button", { name: "Indexed", exact: true })
+    .click();
+  await expect(experience.locator(".run-panel.indexed")).toBeVisible();
+  await expect(experience.locator(".run-panel.nominal")).toHaveCount(0);
+  await experience.getByRole("button", { name: "Split screen" }).click();
+  await experience
+    .locator(".run-panel.nominal")
+    .getByRole("button", { name: /^Banks/ })
+    .click();
+  await expect(experience.getByText("Shared camera: Banks")).toHaveCount(2);
+  await experience.getByLabel("Comparison metric").selectOption("debt_service");
+  await expect(
+    experience.getByRole("heading", { name: "Debt service" }),
+  ).toBeVisible();
+  await experience.getByLabel("Playback speed").selectOption("2");
+  await experience.getByRole("button", { name: "Play" }).click();
+  await expect(range).toHaveValue("17", { timeout: 12_000 });
+  await expect(experience.locator(".run-panel.nominal")).toContainText(
+    "2026-06",
+  );
+  await expect(experience.locator(".run-panel.indexed")).toContainText(
+    "2026-06",
+  );
+  await expect(experience.locator(".shared-cursor")).toHaveAttribute(
+    "x1",
+    "94",
+  );
+});
+
+test("keeps Compare mode accessible and contained on narrow screens", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "mobile comparison audit");
+  const experience = page.locator("ecodeling-experience");
+  await experience.getByRole("button", { name: "Compare" }).click();
+  const results = await new AxeBuilder({ page })
+    .include("ecodeling-experience")
+    .disableRules(["landmark-one-main"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+  const scrollWidth = await page.evaluate(
+    () => document.documentElement.scrollWidth,
+  );
+  expect(scrollWidth).toBeLessThanOrEqual(390);
+  await expect(experience.getByLabel("Comparison metric")).toBeVisible();
+  await expect(
+    experience.locator(".cohort-panel th", { hasText: "Indexed − nominal" }),
+  ).toBeVisible();
+});
+
 test("matches the deterministic economy-scene baseline", async ({ page }) => {
   const experience = page.locator("ecodeling-experience");
   await experience.evaluate((element) => element.setAttribute("static", ""));

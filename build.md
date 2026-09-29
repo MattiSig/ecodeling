@@ -279,16 +279,16 @@ Verification gate: frontend suite, visual regression baselines, and manual trace
 
 Acceptance: a reader can watch and freely inspect the canonical mechanism, and no visible economic event is invented by the frontend.
 
-## [ ] Phase 15 — Compare mode and synchronized analytical charts
+## [x] Phase 15 — Compare mode and synchronized analytical charts
 
 References: `specs/14_metrics_and_outputs.md`, `specs/20_blog_post_plan.md`, `specs/22_interactive_web_experience.md`
 
-- [ ] Implement nominal, indexed, and synchronized split-screen views.
-- [ ] Keep month, playback, selection, camera, and selected metric aligned across paired runs.
-- [ ] Add synchronized charts for CPI, policy rate, principal, debt service, consumption, defaults, and bank equity.
-- [ ] Add cohort comparisons and clearly labeled differences with units and baselines.
-- [ ] Fall back from individual matching to declared cohort comparison when identities do not correspond.
-- [ ] Add pairing validation, synchronization, chart, responsive, and accessibility tests.
+- [x] Implement nominal, indexed, and synchronized split-screen views.
+- [x] Keep month, playback, selection, camera, and selected metric aligned across paired runs.
+- [x] Add synchronized charts for CPI, policy rate, principal, debt service, consumption, defaults, and bank equity.
+- [x] Add cohort comparisons and clearly labeled differences with units and baselines.
+- [x] Fall back from individual matching to declared cohort comparison when identities do not correspond.
+- [x] Add pairing validation, synchronization, chart, responsive, and accessibility tests.
 
 Verification gate: frontend suite plus end-to-end playback over the full canonical paired timeline with no alignment drift.
 
@@ -411,3 +411,8 @@ Notes: Added an embeddable Lit custom element whose stable attributes, methods, 
 Baseline: d7df2dba1e09dbd6bcfaf63f4b4126b469defa04
 Verification: `uv sync --all-groups`; `uv run pytest` (90 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (5 legacy/contract and 10 Vitest tests passed); `npm run build:web`; `npm run test:browser` (16 passed across desktop, mobile, and reduced-motion projects; 8 project-specific skips); `git diff --check` (all passed)
 Notes: Replaced the empty public stage with a replay-driven Organic economic circuit containing all six sectors, CPI, simulation month, distinct stock silhouettes, scaled aggregate-flow paths, exact values, ledger identifiers, typed events, and deterministic representative-household inspection. Story scenes derive their source months from the first replay month, FX shock, post-shock import flow, CPI movement, CPI revaluation, and feedback event; manual and automated traces confirmed the canonical chain without presentation-invented transactions. Story and Explore share timeline state; playback provides play, pause, restart, speed, scrub, event markers, keyboard controls, off-screen pausing, discrete reduced-motion behavior, and static fallbacks. Deterministic desktop, mobile, and reduced-motion screenshots plus accessibility and interaction tests lock the rendered circuit to the canonical replay.
+
+2026-09-29 — Phase 15 — COMPLETE
+Baseline: 3ef28fb27b99be649da263b55d8ab0fb1eaa52cf
+Verification: `uv sync --all-groups`; `uv run pytest` (90 passed); `uv run ruff check .`; `uv run ruff format --check .`; `uv run mypy src tests`; `uv run ecodeling --version`; `npm run typecheck:web`; `npm run lint:web`; `npm run format:check`; `npm test` (5 legacy/contract and 13 Vitest tests passed); `npm run build:web`; `npm run test:browser` (18 passed across desktop, mobile, and reduced-motion projects; 12 project-specific skips, including full 18-month paired playback with no drift); `git diff --check` (all passed)
+Notes: Added replay-validated nominal, indexed, and split-screen Compare views on one timeline, playback state, selection, shared sector camera, and selected metric. Seven authoritative paired series render as synchronized solid/dashed charts with one visible time rail and exact indexed-minus-nominal readouts labeled by unit and nominal baseline. Declared distribution cohorts expose like-for-like totals and differences; representative agents are treated as matched individuals only for reciprocal counterpart IDs, otherwise the UI explicitly falls back to the declared cohort. Pairing validation now checks run IDs, seed, shared initialization and shock path, named streams, series timelines, and units. The existing Organic visual system was preserved; desktop/mobile inspection, accessibility checks, responsive containment, and the exact visual baseline all pass.

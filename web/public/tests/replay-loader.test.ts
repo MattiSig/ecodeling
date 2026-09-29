@@ -26,7 +26,16 @@ const validReplay = {
   representative_agents: [],
   aggregate_series: [],
   distribution_series: [],
-  scenario_pairing: {},
+  scenario_pairing: {
+    nominal_run_id: "n",
+    indexed_run_id: "i",
+    shared_seed: 1,
+    shared_initialization: true,
+    shared_shock_path: true,
+    shared_random_streams: ["shocks"],
+    structural_difference: "mortgage_indexation_topology",
+    matching: "stable_household_id",
+  },
 };
 
 describe("loadReplay", () => {
