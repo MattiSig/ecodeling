@@ -21,7 +21,9 @@ Attributes:
 - `src`: JSON or gzip-compressed replay-v1 URL. Omitting it renders the safe empty state.
 - `initial-month`: an optional replay month selected after validation.
 - `static`: disables nonessential motion independently of the operating-system preference.
-- `api-base`: simulation API prefix used by Laboratory mode; defaults to `/api/v1`.
+- `api-base`: simulation API prefix used by Laboratory mode. Omitting it keeps Laboratory hidden,
+  which is appropriate for static hosts; set it to `/api/v1` when the simulation service is
+  available on the same origin.
 
 Public methods are `reload()`, `setMonth(index)`, `select(selection)`, `play()`, `pause()`, and
 `restart()`. Story, Explore, and Compare share the selected month, playback state, and selection,

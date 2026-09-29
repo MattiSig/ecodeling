@@ -109,6 +109,7 @@ describe("ecodeling-experience", () => {
       "ecodeling-experience",
     ) as EcodelingExperience;
     element.src = "/canonical.json";
+    element.apiBase = "/api/v1";
     document.body.append(element);
     await vi.waitFor(() =>
       expect(element.shadowRoot?.textContent).toContain("embedded-test"),
@@ -124,5 +125,20 @@ describe("ecodeling-experience", () => {
     );
     expect(element.shadowRoot?.textContent).toContain("embedded-test");
     expect(element.shadowRoot?.textContent).toContain("2025-01");
+  });
+
+  it("hides Laboratory when no simulation API is configured", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(replay)),
+    );
+    const element = document.createElement(
+      "ecodeling-experience",
+    ) as EcodelingExperience;
+    element.src = "/canonical.json";
+    document.body.append(element);
+    await vi.waitFor(() =>
+      expect(element.shadowRoot?.textContent).toContain("embedded-test"),
+    );
+    expect(element.shadowRoot?.textContent).not.toContain("Laboratory");
   });
 });

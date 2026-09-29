@@ -76,7 +76,7 @@ export class EcodelingExperience extends LitElement {
   @property({ type: String }) src = "";
   @property({ type: String, attribute: "initial-month" }) initialMonth = "";
   @property({ type: Boolean, attribute: "static" }) staticMode = false;
-  @property({ type: String, attribute: "api-base" }) apiBase = "/api/v1";
+  @property({ type: String, attribute: "api-base" }) apiBase = "";
 
   @state() private status: LoadStatus = "empty";
   @state() private replay: ReplayBundleV1 | null = null;
@@ -392,7 +392,14 @@ export class EcodelingExperience extends LitElement {
     return html`
       <section class="ready">
         <nav class="mode-tabs" aria-label="Experience mode">
-          ${(["story", "explore", "compare", "laboratory"] as const).map(
+          ${(
+            [
+              "story",
+              "explore",
+              "compare",
+              ...(this.apiBase.trim() === "" ? [] : (["laboratory"] as const)),
+            ] as ExperienceMode[]
+          ).map(
             (mode) =>
               html`<button
                 type="button"
